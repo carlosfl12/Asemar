@@ -2,7 +2,7 @@ name: Deploy Angular to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]   # 👈 tu rama
   workflow_dispatch:
 
 permissions:
@@ -23,9 +23,9 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run build
-      - run: npm run postbuild
-      - run: ls -la dist/asemar/browser  
+      - run: npm run build         # genera dist/asemar/browser
+      - run: npm run postbuild     # crea 404.html junto a index.html
+      - run: ls -la dist/asemar/browser
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
