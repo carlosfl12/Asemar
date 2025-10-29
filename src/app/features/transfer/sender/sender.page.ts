@@ -25,16 +25,23 @@ export class SenderPage {
   addDato() { this.datosFaltan.push(this.fb.control('')); }
   removeDato(i: number) { this.datosFaltan.removeAt(i); }
 
-  // Enviar por query params (el archivo no viaja por aquí)
   onSubmit() {
     const v = this.form.value;
-    this.router.navigate(['/display'], {
-      queryParams: {
-        cliente_id: v.cliente_id,
-        status: v.status,
-        factura_url: v.factura_url,
-        datos_faltan: JSON.stringify((v.datos_faltan ?? []).filter(Boolean)),
-      },
+    const datos = (v.datos_faltan ?? []).filter(Boolean) as string[];
+    const url = new URL('https://carlosfl12.github.io/asemar/display');
+    url.searchParams.set('cliente_id', String(v.cliente_id));
+    url.searchParams.set('status', String(v.status));
+    url.searchParams.set('factura_url', String(v.factura_url));
+    url.searchParams.set('datos_faltan', JSON.stringify(datos));
+
+    fetch('http://localhost/asemar-api/push/notify-admin.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Nuevos datos de factura',
+        body: `Cliente: ${v.cliente_id} · Estado: ${v.status}`,
+        url: url.toString()
+      }),
     });
   }
 

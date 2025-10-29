@@ -28,8 +28,9 @@
             "baseHref": "/asemar/",
             "assets": [
               {
-                "glob": "**/*",
-                "input": "public"
+                "glob": "asm-sw.js",
+                "input": "src",
+                "output": "/"
               }
             ],
             "styles": [
