@@ -1,0 +1,35 @@
+<h1>Enviar datos de factura</h1>
+
+<form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <label>Cliente ID
+        <input type="text" formControlName="cliente_id" />
+    </label>
+
+    <label>Estado
+        <select formControlName="status">
+            <option value="pending">pending</option>
+            <option value="processed">processed</option>
+            <option value="error">error</option>
+        </select>
+    </label>
+
+    <label>Factura URL
+        <input type="url" formControlName="factura_url" />
+    </label>
+
+    <div>
+        <label>Datos que faltan</label>
+        <div formArrayName="datos_faltan">
+            <div *ngFor="let c of datosFaltan.controls; let i = index">
+                <input [formControlName]="i" placeholder="dato faltante" />
+                <button type="button" (click)="removeDato(i)">Quitar</button>
+            </div>
+        </div>
+        <button type="button" (click)="addDato()">Añadir dato</button>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" (click)="fillDemo()">Rellenar demo</button>
+        <button type="submit">Enviar (query params)</button>
+    </div>
+</form>

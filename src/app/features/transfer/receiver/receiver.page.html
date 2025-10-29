@@ -1,0 +1,19 @@
+<h1>Datos recibidos</h1>
+
+<ng-container *ngIf="payload(); else esperando">
+    <p><strong>cliente_id:</strong> {{ payload().cliente_id }}</p>
+    <p><strong>status:</strong> {{ payload().status }}</p>
+    <p><strong>factura_url:</strong>
+        <a [href]="payload().factura_url" target="_blank">{{ payload().factura_url }}</a>
+    </p>
+    <div>
+        <strong>datos_faltan:</strong>
+        <ul>
+            <li *ngFor="let d of payload().datos_faltan">{{ d }}</li>
+        </ul>
+    </div>
+</ng-container>
+
+<ng-template #esperando>
+    <p>Esperando datos...</p>
+</ng-template>

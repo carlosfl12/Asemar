@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
+
 @Component({
+  standalone: true,
   selector: 'asm-root',
   imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  template: `<router-outlet />`,
 })
-export class AppComponent {
-  title = 'asemar';
-}
+export class AppComponent { }
