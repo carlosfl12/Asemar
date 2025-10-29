@@ -1,4 +1,5 @@
 name: Deploy Angular to GitHub Pages
+
 on:
   push:
     branches: [ main ]
@@ -24,10 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run postbuild
+      - run: ls -la dist/asemar/browser  
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/asemar/browser
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
