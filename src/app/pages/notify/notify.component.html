@@ -1,30 +1,49 @@
-<div class="p-4 max-w-2xl mx-auto">
-    <h1 class="text-xl font-semibold mb-3">Detalle de notificación</h1>
-
-    <div *ngIf="loading()">Cargando…</div>
-    <div *ngIf="!loading() && error()" class="text-red-600">Error: {{ error() }}</div>
-
-    <ng-container *ngIf="!loading() && !error() && data() as d">
-        <div class="space-y-2">
-            <div><strong>Título:</strong> {{ d.title || 'Asemar — Notificación' }}</div>
-            <div><strong>Mensaje:</strong> {{ d.body || '—' }}</div>
-            <div *ngIf="d.meta as m" class="mt-4 border-t pt-3">
-                <h2 class="font-medium mb-2">Datos del formulario</h2>
-                <div><strong>Cliente:</strong> {{ m.cliente_id || '—' }}</div>
-                <div><strong>Estado:</strong> {{ m.status || '—' }}</div>
-                <div *ngIf="m.factura_url"><strong>Factura:</strong> <a [href]="m.factura_url" target="_blank"
-                        rel="noopener">{{ m.factura_url }}</a></div>
-                <div *ngIf="m.datos_faltan?.length">
-                    <strong>Datos faltantes:</strong>
-                    <ul class="list-disc list-inside">
-                        <li *ngFor="let f of m.datos_faltan">{{ f }}</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="text-sm text-gray-500 mt-2" *ngIf="d.ts">
-                Recibido: {{ (d.ts * 1000) | date:'short' }}
+<!-- app/pages/notify/notify.component.html -->
+<div class="page">
+    <header class="page__header">
+        <div class="title">
+            <div class="title__icon">📄</div>
+            <div>
+                <h1>Gestión de Facturas</h1>
+                <p class="subtitle">Sistema de procesamiento automático</p>
             </div>
         </div>
-    </ng-container>
+        <button class="btn btn--ghost" (click)="load()">↻ Recargar</button>
+    </header>
+
+    <section class="list">
+        <h2>Mis Facturas</h2>
+
+        <div *ngIf="loading()" class="empty">Cargando…</div>
+        <div *ngIf="error()" class="empty empty--error">
+            {{ error() }}
+            <button class="btn btn--link" (click)="load()">Reintentar</button>
+        </div>
+
+        <ng-container *ngIf="!loading() && !error() && invoices().length === 0">
+            <div class="empty">Aún no hay facturas.</div>
+        </ng-container>
+
+        <div class="card" *ngFor="let inv of invoices()">
+            <div class="card__left">
+                <div class="dot dot--error" *ngIf="inv.status === 'err'"></div>
+                <div class="dot dot--ok" *ngIf="inv.status === 'ok'"></div>
+                <strong class="filename">{{ inv.fileName }}</strong>
+                <small class="meta">{{ inv.createdAt | date:'dd/MM/yyyy, HH:mm' }}</small>
+            </div>
+
+            <div class="card__right">
+                <span class="badge" [ngClass]="badgeClass(inv.status)">
+                    {{ inv.status === 'err' ? 'Fallido' : (inv.status === 'ok' ? 'Procesado' : 'Pendiente') }}
+                </span>
+                <button class="btn btn--ghost" (click)="open(inv)">
+                    ✏️ Corregir
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal visualizador (overlay) -->
+    <app-invoice-visualizer *ngIf="selected() as sel" [invoice]="sel" (close)="closeModal()">
+    </app-invoice-visualizer>
 </div>

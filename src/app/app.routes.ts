@@ -10,6 +10,8 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./features/admin/admin.page/admin.page').then(m => m.AdminPage),
     },
-    { path: 'notify', component: NotifyComponent },
+    { path: 'notify', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
+    { path: 'notify/:id', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
+
     { path: '**', redirectTo: 'transfer' }
 ];

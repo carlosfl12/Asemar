@@ -1,0 +1,52 @@
+<div class="overlay" (click)="close.emit()"></div>
+
+<div class="sheet" role="dialog" aria-modal="true">
+    <header class="sheet__header">
+        <h3>Editar Factura: {{ invoice.fileName }}</h3>
+        <button class="icon-btn" (click)="close.emit()" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="sheet__body">
+        <div class="pdf">
+            <object [data]="safePdfUrl" type="application/pdf" width="100%" height="100%">
+                <iframe [src]="safePdfUrl" title="PDF" width="100%" height="100%"></iframe>
+            </object>
+        </div>
+
+        <form class="form" [formGroup]="form" (ngSubmit)="save()">
+            <h4>Datos de la Factura</h4>
+
+            <label> Número de Factura
+                <input formControlName="number" placeholder="Ej: F-2024-001">
+            </label>
+
+            <label> Fecha de Factura
+                <input formControlName="date" type="date">
+            </label>
+
+            <label> Nombre del Proveedor
+                <input formControlName="supplierName" placeholder="Nombre de la empresa">
+            </label>
+
+            <label> NIF/CIF Proveedor
+                <input formControlName="supplierVat" placeholder="Ej: B12345678">
+            </label>
+
+            <label> Subtotal (€)
+                <input formControlName="subtotal" type="number" step="0.01">
+            </label>
+
+            <label> IVA (€)
+                <input formControlName="vat" type="number" step="0.01">
+            </label>
+
+            <label> Total (€)
+                <input formControlName="total" type="number" step="0.01">
+            </label>
+
+            <button class="btn btn--primary" type="submit">
+                💾 Guardar y Enviar
+            </button>
+        </form>
+    </div>
+</div>

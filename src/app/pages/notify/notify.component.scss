@@ -1,0 +1,161 @@
+/* app/pages/notify/notify.component.scss */
+:host {
+    display: block;
+}
+
+.page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.title {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.title__icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    background: #eef2ff;
+    border-radius: 10px;
+}
+
+.subtitle {
+    margin: 0;
+    color: #6b7280;
+}
+
+.uploader .drop {
+    border: 2px dashed #e5e7eb;
+    border-radius: 14px;
+    padding: 48px;
+    text-align: center;
+    background: #fafafa;
+}
+
+.drop__icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.list {
+    margin-top: 28px;
+}
+
+.card {
+    padding: 16px 20px;
+    border: 1px solid #eef0f3;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    margin-bottom: 12px;
+}
+
+.card__left {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.filename {
+    margin-right: 8px;
+    font-weight: 600;
+}
+
+.meta {
+    color: #6b7280;
+}
+
+.card__right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.dot--error {
+    background: #ef4444;
+}
+
+.dot--ok {
+    background: #10b981;
+}
+
+.dot--pending {
+    background: #f59e0b;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge--failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge--ok {
+    background: #dcfce7;
+    color: #065f46;
+}
+
+.badge--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.btn {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn--ghost {
+    background: #f3f4f6;
+}
+
+.btn--light {
+    background: #eef2ff;
+}
+
+.btn--link {
+    background: transparent;
+    color: #2563eb;
+    padding: 0 6px;
+}
+
+.icon {
+    margin-right: 6px;
+}
+
+.empty {
+    padding: 16px;
+    color: #6b7280;
+}
+
+.empty--error {
+    color: #b91c1c;
+}

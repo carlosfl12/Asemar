@@ -1,34 +1,43 @@
-<h1>Enviar datos de factura</h1>
+<form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-3">
 
-<form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <label>Cliente ID
-        <input type="text" formControlName="cliente_id" />
+    <label>Cliente
+        <input formControlName="cliente_id" placeholder="CL-00042">
     </label>
 
     <label>Estado
         <select formControlName="status">
+            <option value="pending">pending</option>
             <option value="ok">ok</option>
-            <option value="error">error</option>
+            <option value="err">err</option>
         </select>
     </label>
 
-    <label>Factura URL
-        <input type="url" formControlName="factura_url" />
+    <label>URL PDF
+        <input formControlName="factura_url" placeholder="asemar-api/db/uploads/invoices/00_25002805.pdf">
     </label>
 
+    <!-- datos_faltan -->
     <div>
-        <label>Datos que faltan</label>
-        <div formArrayName="datos_faltan">
-            <div *ngFor="let c of datosFaltan.controls; let i = index">
-                <input [formControlName]="i" placeholder="dato faltante" />
-                <button type="button" (click)="removeDato(i)">Quitar</button>
-            </div>
+        <strong>Datos faltantes</strong>
+        <div *ngFor="let ctrl of datosFaltan.controls; let i = index">
+            <input formControlName="ctrl" placeholder="Dato faltante">
+            <button type="button" (click)="removeDato(i)">Quitar</button>
         </div>
         <button type="button" (click)="addDato()">Añadir dato</button>
     </div>
 
-    <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button type="button" (click)="fillDemo()">Rellenar demo</button>
-        <button type="submit">Enviar (query params)</button>
-    </div>
+    <!-- extracted -->
+    <fieldset formGroupName="extracted" style="border:1px solid #ddd;padding:8px;">
+        <legend>Datos extraídos</legend>
+        <label>Nº factura <input formControlName="number"></label>
+        <label>Fecha <input type="date" formControlName="date"></label>
+        <label>Proveedor <input formControlName="supplierName"></label>
+        <label>NIF/CIF proveedor <input formControlName="supplierVat"></label>
+        <label>Subtotal <input type="number" step="0.01" formControlName="subtotal"></label>
+        <label>IVA (vat) <input type="number" step="0.01" formControlName="vat"></label>
+        <label>Total <input type="number" step="0.01" formControlName="total"></label>
+    </fieldset>
+
+    <button type="submit" [disabled]="sending()">Guardar</button>
+    <button [disabled]="fillDemo()">Rellenar datos de demo</button>
 </form>
