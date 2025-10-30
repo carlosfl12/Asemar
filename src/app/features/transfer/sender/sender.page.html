@@ -1,14 +1,13 @@
 <h1>Enviar datos de factura</h1>
 
-<form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
     <label>Cliente ID
         <input type="text" formControlName="cliente_id" />
     </label>
 
     <label>Estado
         <select formControlName="status">
-            <option value="pending">pending</option>
-            <option value="processed">processed</option>
+            <option value="ok">ok</option>
             <option value="error">error</option>
         </select>
     </label>

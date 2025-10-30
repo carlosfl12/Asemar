@@ -28,7 +28,7 @@ export class ReceiverPage {
 
         this.notify.push(
           'Nuevos datos recibidos',
-          `Cliente: ${cliente_id} · Estado: ${status}`
+          `Cliente: ${cliente_id} · Estado: ${status}, URL: ${factura_url}`
         );
       }
     });

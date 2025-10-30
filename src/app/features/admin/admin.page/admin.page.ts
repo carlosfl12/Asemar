@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PushService } from '../../../../core/push.service';
+import { PushService } from '../../../services/push.service';
 
 @Component({
   standalone: true,
@@ -11,7 +11,18 @@ import { PushService } from '../../../../core/push.service';
 })
 
 export class AdminPage {
-  private push = inject(PushService);
-  backendUrl = 'http://localhost/asemar-api';
-  enable() { this.push.subscribeAdmin(this.backendUrl); }
+  loading = signal(false);
+  msg = signal<string | null>(null);
+  constructor(private push: PushService) { }
+  async activate() {
+    this.loading.set(true);
+    try {
+      await this.push.subscribeAndSend();
+      this.msg.set('Suscripción registrada. Este dispositivo recibirá notificaciones.');
+    } catch (e: any) {
+      this.msg.set(e?.message ?? 'Error al suscribirse');
+    } finally {
+      this.loading.set(false);
+    }
+  }
 }

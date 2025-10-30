@@ -1,3 +1,6 @@
-<h2>Admin</h2>
-<p>Activa las notificaciones en este dispositivo.</p>
-<button (click)="enable()">Activar notificaciones</button>
+<div class="p-4">
+    <h2>Admin</h2>
+    <button (click)="activate()" [disabled]="loading()">Activar notificaciones</button>
+    <p *ngIf="msg()">{{ msg() }}</p>
+</div>
+`

@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { PushService } from '../../../services/push.service';
 
 @Component({
   standalone: true,
@@ -13,6 +14,8 @@ import { Router } from '@angular/router';
 export class SenderPage {
   private fb = new FormBuilder();
   private router = inject(Router);
+  private pushService = inject(PushService);
+  sending = signal(false);
 
   form = this.fb.group({
     cliente_id: ['CL-00042', Validators.required],
@@ -25,24 +28,29 @@ export class SenderPage {
   addDato() { this.datosFaltan.push(this.fb.control('')); }
   removeDato(i: number) { this.datosFaltan.removeAt(i); }
 
-  onSubmit() {
-    const v = this.form.value;
-    const datos = (v.datos_faltan ?? []).filter(Boolean) as string[];
-    const url = new URL('https://carlosfl12.github.io/asemar/display');
-    url.searchParams.set('cliente_id', String(v.cliente_id));
-    url.searchParams.set('status', String(v.status));
-    url.searchParams.set('factura_url', String(v.factura_url));
-    url.searchParams.set('datos_faltan', JSON.stringify(datos));
+  async onSubmit() {
+    if (this.form.invalid) return;
+    this.sending.set(true);
 
-    fetch('http://localhost/asemar-api/push/notify-admin.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: 'Nuevos datos de factura',
-        body: `Cliente: ${v.cliente_id} · Estado: ${v.status}`,
-        url: url.toString()
-      }),
-    });
+    const clienteId = this.form.value.cliente_id!;
+    const status = this.form.value.status!;
+    const facturaUrl = this.form.value.factura_url!;
+    const datosFaltan = this.form.value.datos_faltan!;
+
+    try {
+      await this.pushService.notifyAdmin({
+        title: 'Asemar - nuevos datos recibidos',
+        body: `Cliente ${clienteId}: ${status}
+        - Factura URL: ${facturaUrl}
+        - Datos que faltan: ${datosFaltan}
+        `,
+        url: 'http://localhost:4200/asemar/transfer'
+      })
+    } catch (e) {
+      console.error('No se pudo notificar al admin', e);
+    }
+
+    this.sending.set(false);
   }
 
   // Relleno rápido de demo
@@ -51,7 +59,7 @@ export class SenderPage {
     ['NIF', 'Dirección de facturación'].forEach(v => this.datosFaltan.push(this.fb.control(v)));
     this.form.patchValue({
       cliente_id: 'CL-00042',
-      status: 'pending',
+      status: 'ok',
       factura_url: 'https://example.com/facturas/INV-2025-0001.pdf',
     });
   }
