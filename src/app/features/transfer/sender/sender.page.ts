@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,7 +11,8 @@ import { PushService } from '../../../services/push.service';
   templateUrl: './sender.page.html',
   styleUrls: ['./sender.page.scss'],
 })
-export class SenderPage {
+
+export class SenderPage implements OnInit {
   private fb = new FormBuilder();
   private router = inject(Router);
   private pushService = inject(PushService);
@@ -27,6 +28,18 @@ export class SenderPage {
   get datosFaltan() { return this.form.get('datos_faltan') as FormArray; }
   addDato() { this.datosFaltan.push(this.fb.control('')); }
   removeDato(i: number) { this.datosFaltan.removeAt(i); }
+
+  async ngOnInit() {
+    try {
+      await this.pushService.notifyAdmin({
+        title: 'El cliente ha entrado en la página',
+        body: "Haz click para acceder",
+        url: '/asemar/notify'
+      });
+    } catch (e) {
+      console.log("No se pudo enviar la notificación", e);
+    }
+  }
 
   async onSubmit() {
     if (this.form.invalid) return;
@@ -44,7 +57,7 @@ export class SenderPage {
         - Factura URL: ${facturaUrl}
         - Datos que faltan: ${datosFaltan}
         `,
-        url: 'http://localhost:4200/asemar/transfer'
+        url: '/asemar/notify'
       })
     } catch (e) {
       console.error('No se pudo notificar al admin', e);

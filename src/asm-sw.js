@@ -13,7 +13,7 @@ self.addEventListener('push', (event) => {
 
         const title = (data && data.title) || 'Notificación';
         const body = (data && data.body) || '';
-        const url = (data && data.url) || 'http://localhost:4200/asemar/transfer'; // fallback a Google
+        const url = (data && data.url) || '/asemar/notify';
 
         await self.registration.showNotification(title, {
             body,
@@ -26,7 +26,7 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     // URL objetivo (con saneado)
-    const raw = (event.notification?.data && event.notification.data.url) || 'http://localhost:4200/asemar/transfer';
+    const raw = (event.notification?.data && event.notification.data.url) || '/asemar/notify';
     const urlStr = String(raw).trim();
 
     event.waitUntil((async () => {

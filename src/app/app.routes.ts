@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-
+import { NotifyComponent } from './pages/notify/notify.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'transfer', pathMatch: 'full' },
@@ -10,6 +10,6 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./features/admin/admin.page/admin.page').then(m => m.AdminPage),
     },
-
+    { path: 'notify', component: NotifyComponent },
     { path: '**', redirectTo: 'transfer' }
 ];
