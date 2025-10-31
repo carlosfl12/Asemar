@@ -159,3 +159,15 @@
 .empty--error {
     color: #b91c1c;
 }
+
+.counters {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin: 12px 0 16px;
+
+    p {
+        margin: 0;
+        color: #374151;
+    }
+}

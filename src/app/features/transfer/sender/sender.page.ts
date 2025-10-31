@@ -50,7 +50,6 @@ export class SenderPage implements OnInit {
       console.log("No se pudo enviar la notificación", e);
     }
   }
-  private toNum = (x: any) => (x === '' || x == null ? null : Number(x));
 
   async onSubmit() {
     if (this.form.invalid) return;
@@ -68,9 +67,9 @@ export class SenderPage implements OnInit {
         date: v.extracted['date'] || null,
         supplierName: v.extracted['supplierName'] || null,
         supplierVat: v.extracted['supplierVat'] || null,
-        subtotal: this.toNum(v.extracted['subtotal']),
-        vat: this.toNum(v.extracted['vat']),   // VAT = IVA (importe)
-        total: this.toNum(v.extracted['total']),
+        subtotal: v.extracted['subtotal'],
+        vat: v.extracted['vat'],
+        total: v.extracted['total'],
       } : null
     };
 
@@ -95,16 +94,16 @@ export class SenderPage implements OnInit {
     ['NIF', 'Dirección de facturación'].forEach(v => this.datosFaltan.push(this.fb.control(v)));
     this.form.patchValue({
       cliente_id: 'CL-00042',
-      status: 'ok',
-      factura_url: 'https://example.com/facturas/INV-2025-0001.pdf',
+      status: 'err',
+      factura_url: '/asemar-api/db/uploads/invoices/00_25002805.pdf',
       extracted: {
         number: '25002807',
         date: Date.now().toLocaleString(),
         supplierName: 'Pepe',
-        supplierVat: '325 €',
-        subtotal: '393.25 €',
-        vat: '68.25 €',
-        total: '393.25 €'
+        supplierVat: '325',
+        subtotal: '393',
+        vat: '68',
+        total: '393'
       }
     });
   }

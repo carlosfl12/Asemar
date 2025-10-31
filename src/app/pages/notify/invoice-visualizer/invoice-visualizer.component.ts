@@ -14,9 +14,10 @@ import { InvoiceItem } from '../types';
 export class InvoiceVisualizerComponent {
   @Input() invoice!: InvoiceItem;
   @Output() close = new EventEmitter<void>();
+  @Output() fixed = new EventEmitter<void>();
 
   private sanitizer = inject(DomSanitizer);
-  safePdfUrl!: SafeResourceUrl;   // <-- url segura para el visor
+  safePdfUrl!: SafeResourceUrl;
 
   fb = new FormBuilder();
   form = this.fb.group({
@@ -45,16 +46,9 @@ export class InvoiceVisualizerComponent {
     // --- Sanear URL del PDF ---
     const raw = this.invoice.pdfUrl;
 
-    // valida mismo origen (recomendado)
+    // valida mismo origen
     const urlObj = new URL(raw, window.location.origin);
     if (urlObj.origin !== window.location.origin) {
-      // Si viene de otro dominio, créate un blob local (opcional):
-      // const blob = await (await fetch(urlObj.href)).blob();
-      // const localUrl = URL.createObjectURL(blob);
-      // this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(localUrl);
-      // return;
-
-      // O, si confías en esa URL externa, al menos sánéala:
       this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlObj.href);
     } else {
       this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlObj.href);

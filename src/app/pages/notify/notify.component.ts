@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Payload, InvoiceItem } from './types';
 import { InvoiceVisualizerComponent } from './invoice-visualizer/invoice-visualizer.component';
+import { SseService } from '../../core/sse.service';
 
 @Component({
   selector: 'app-notify',
@@ -20,6 +21,9 @@ export class NotifyComponent implements OnInit {
   error = signal<string | null>(null);
   data = signal<Payload | null>(null);
 
+  okCounter = signal<number>(0);
+  totalCounter = computed(() => this.data()?.invoices.length ?? 0);
+
   private paramMapSig = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
   });
@@ -28,7 +32,7 @@ export class NotifyComponent implements OnInit {
 
   invoices = computed(() => this.data()?.invoices ?? []);
 
-  constructor() {
+  constructor(private sse: SseService) {
     effect(() => {
       const id = this.paramMapSig()?.get('id');
       if (!id) {
@@ -42,6 +46,10 @@ export class NotifyComponent implements OnInit {
 
   async ngOnInit() {
     await this.load();
+    this.sse.stream<Payload>('/asemar-api/push/stream.php')
+      .subscribe(payload => {
+        this.data.set(payload);
+      });
   }
 
   async load() {
@@ -57,6 +65,25 @@ export class NotifyComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async loadCounters() {
+    try {
+      const res = await fetch('/asemar-api/push/counter.php?action=get', { cache: 'no-store' })
+      if (res.ok) {
+        const json = await res.json();
+        this.okCounter.set(Number(json?.ok ?? 0));
+      }
+    } catch {
+
+    }
+  }
+
+  async onInvoiceFixed() {
+    try {
+      await fetch('/asemar-api/push/counter.php?action=inc', { method: 'POST' });
+    } catch { }
+    await this.loadCounters();
   }
 
   open(invoice: InvoiceItem) {

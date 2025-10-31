@@ -1,18 +1,20 @@
-<!-- app/pages/notify/notify.component.html -->
 <div class="page">
     <header class="page__header">
         <div class="title">
             <div class="title__icon">📄</div>
             <div>
                 <h1>Gestión de Facturas</h1>
-                <p class="subtitle">Sistema de procesamiento automático</p>
             </div>
         </div>
         <button class="btn btn--ghost" (click)="load()">↻ Recargar</button>
     </header>
 
     <section class="list">
-        <h2>Mis Facturas</h2>
+        <h2>Facturas erróneas</h2>
+        <!-- <div class="counters">
+            <p><strong>Facturas subidas:</strong> {{ totalCounter() }}</p>
+            <p><strong>Facturas correctas:</strong> {{ okCounter() }}</p>
+        </div> -->
 
         <div *ngIf="loading()" class="empty">Cargando…</div>
         <div *ngIf="error()" class="empty empty--error">
@@ -44,6 +46,6 @@
     </section>
 
     <!-- Modal visualizador (overlay) -->
-    <app-invoice-visualizer *ngIf="selected() as sel" [invoice]="sel" (close)="closeModal()">
+    <app-invoice-visualizer *ngIf="selected() as sel" [invoice]="sel" (close)="closeModal()" (fixed)="onInvoiceFixed()">
     </app-invoice-visualizer>
 </div>
