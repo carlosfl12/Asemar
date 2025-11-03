@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PushService } from '../../../services/push.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   standalone: true,
@@ -13,6 +14,9 @@ import { PushService } from '../../../services/push.service';
 })
 
 export class SenderPage implements OnInit {
+
+  private readonly baseUrl = environment.serveUrl;
+
   private fb = new FormBuilder();
   private router = inject(Router);
   private pushService = inject(PushService);
@@ -44,7 +48,7 @@ export class SenderPage implements OnInit {
       await this.pushService.notifyAdmin({
         title: 'El cliente ha entrado en la página',
         body: "Haz click para acceder",
-        url: '/asemar/notify'
+        url: '/notify'
       });
     } catch (e) {
       console.log("No se pudo enviar la notificación", e);
@@ -73,8 +77,10 @@ export class SenderPage implements OnInit {
       } : null
     };
 
+    private readonly api_serve = environment.serveUrl;
+
     // ENVÍO al backend
-    const res = await fetch('/asemar-api/db/append_invoice.php', {
+    const res = await fetch(`${environment.apiUrl}/db/append_invoice.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

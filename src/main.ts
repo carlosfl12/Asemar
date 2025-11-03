@@ -6,5 +6,5 @@ bootstrapApplication(AppComponent, appConfig)
   .catch((err) => console.error(err));
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/asemar/asm-sw.js').catch(console.error);
+  navigator.serviceWorker.register('/asm-sw.js').catch(console.error);
 }

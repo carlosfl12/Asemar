@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { NotifyComponent } from './pages/notify/notify.component';
 
 export const routes: Routes = [
     { path: '', redirectTo: 'transfer', pathMatch: 'full' },
