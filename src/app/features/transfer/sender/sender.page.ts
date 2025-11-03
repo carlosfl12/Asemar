@@ -16,6 +16,8 @@ import { environment } from '../../../../environments/environment';
 export class SenderPage implements OnInit {
 
   private readonly baseUrl = environment.serveUrl;
+  private readonly api_serve = environment.apiUrl;
+
 
   private fb = new FormBuilder();
   private router = inject(Router);
@@ -44,14 +46,20 @@ export class SenderPage implements OnInit {
   removeDato(i: number) { this.datosFaltan.removeAt(i); }
 
   async ngOnInit() {
+
     try {
-      await this.pushService.notifyAdmin({
-        title: 'El cliente ha entrado en la página',
-        body: "Haz click para acceder",
-        url: '/notify'
-      });
-    } catch (e) {
-      console.log("No se pudo enviar la notificación", e);
+      // if (sessionStorage.getItem('isAdmin') && sessionStorage.getItem("isAdmin") === '1') return;
+      await fetch(`${this.api_serve}/onesignal/notify-enter.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cliente_id: this.form?.value?.cliente_id || null,
+          send_to_all: true,
+          // external_id: 'admin'
+        })
+      })
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -77,7 +85,6 @@ export class SenderPage implements OnInit {
       } : null
     };
 
-    private readonly api_serve = environment.serveUrl;
 
     // ENVÍO al backend
     const res = await fetch(`${environment.apiUrl}/db/append_invoice.php`, {

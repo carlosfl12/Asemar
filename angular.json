@@ -7,7 +7,8 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "scss"
+          "style": "scss",
+          "skipTests": true
         }
       },
       "root": "",
@@ -29,6 +30,16 @@
               {
                 "glob": "asm-sw.js",
                 "input": "src",
+                "output": "/"
+              },
+              {
+                "glob": "OneSignalSDKWorker.js",
+                "input": "src/onesignal",
+                "output": "/"
+              },
+              {
+                "glob": "OneSignalSDKUpdaterWorker.js",
+                "input": "src/onesignal",
                 "output": "/"
               }
             ],

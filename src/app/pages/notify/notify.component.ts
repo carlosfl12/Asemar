@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Payload, InvoiceItem } from './types';
 import { InvoiceVisualizerComponent } from './invoice-visualizer/invoice-visualizer.component';
 import { SseService } from '../../core/sse.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-notify',
@@ -16,6 +17,7 @@ import { SseService } from '../../core/sse.service';
 export class NotifyComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private readonly api_url = environment.apiUrl;
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -46,7 +48,7 @@ export class NotifyComponent implements OnInit {
 
   async ngOnInit() {
     await this.load();
-    this.sse.stream<Payload>('/asemar-api/push/stream.php')
+    this.sse.stream<Payload>(`${this.api_url}/asemar-api/push/stream.php`)
       .subscribe(payload => {
         this.data.set(payload);
       });
@@ -56,7 +58,7 @@ export class NotifyComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const res = await fetch('/asemar-api/push/poll.php', { cache: 'no-store' });
+      const res = await fetch(`${this.api_url}/asemar-api/push/poll.php`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: Payload = await res.json();
       this.data.set(json);
