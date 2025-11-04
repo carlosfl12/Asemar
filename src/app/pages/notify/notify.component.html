@@ -11,10 +11,6 @@
 
     <section class="list">
         <h2>Facturas erróneas</h2>
-        <!-- <div class="counters">
-            <p><strong>Facturas subidas:</strong> {{ totalCounter() }}</p>
-            <p><strong>Facturas correctas:</strong> {{ okCounter() }}</p>
-        </div> -->
 
         <div *ngIf="loading()" class="empty">Cargando…</div>
         <div *ngIf="error()" class="empty empty--error">

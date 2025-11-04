@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { InvoiceRow, IncomingEnvelope, StoredRow } from '../../../models/sse.models';
 
 interface NotificationEvent {
   timestamp: number;
@@ -33,6 +34,10 @@ export class SseComponent implements OnInit, OnDestroy {
   eventLogs: EventLog[] = [];
   error: string | null = null;
 
+  // Guardar los registros que vayan llegando por evento
+  invoices: StoredRow[] = [];
+  private readonly STORAGE_KEY = 'asm_sse_invoices';
+
   // URLs - ajusta según tu servidor
   private readonly SSE_URL = '/sse';
   private readonly SEND_EVENT_URL = '/send-event';
@@ -42,11 +47,25 @@ export class SseComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Auto-conectar al cargar
+    this.loadFromStorage();
     this.connect();
   }
 
   ngOnDestroy(): void {
     this.disconnect();
+  }
+
+  private loadFromStorage(): void {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      this.invoices = raw ? JSON.parse(raw) as StoredRow[] : [];
+    } catch { this.invoices = []; }
+  }
+
+  private saveToStorage(): void {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.invoices))
+    } catch { }
   }
 
   toggleConnection(): void {
@@ -77,6 +96,11 @@ export class SseComponent implements OnInit, OnDestroy {
         this.isConnected = false;
       };
 
+      // Handler genérico: cualquier mensaje del SSE
+      this.eventSource.onmessage = (event: MessageEvent) => {
+        this.handleEnvelope(event.data);
+      }
+
       // Escuchar el evento 'notification' (o cualquier otro tipo que envíes)
       this.eventSource.addEventListener('notification', (event: MessageEvent) => {
         console.log('📨 Evento recibido:', event);
@@ -96,6 +120,19 @@ export class SseComponent implements OnInit, OnDestroy {
     }
   }
 
+  buildFilename(inv: any): string {
+    // arma un nombre "bonito" si no tienes nombre de archivo real
+    const base =
+      inv?.numero_factura ??
+      `${inv?.prefijo ?? '000'}-${inv?.nif_emision ?? 'SN'}`;
+    return `${base}.pdf`;
+  }
+
+  open(inv: any): void {
+    // TODO: abre modal/ruta de corrección
+    console.log('Corregir →', inv);
+  }
+
   disconnect(): void {
     if (this.eventSource) {
       this.eventSource.close();
@@ -104,6 +141,78 @@ export class SseComponent implements OnInit, OnDestroy {
       console.log('🔌 Conexión SSE cerrada');
     }
   }
+
+  private handleEnvelope(raw: string): void {
+    try {
+      const env: IncomingEnvelope = JSON.parse(raw);
+      const rows = env?.payload?.data ?? [];
+      if (!Array.isArray(rows)) return;
+
+      const stamped: StoredRow[] = rows.map(r => ({
+        ...r,
+        received_at: env.received_at,
+        client_ip: env.client_ip
+      }));
+
+      const key = (x: StoredRow) => [
+        x.received_at, x.nif_emision, x.nif_receptor, x.importe_total, x.numero_factura
+      ].join('|');
+
+      const existing = new Set(this.invoices.map(key));
+
+      for (const row of stamped) {
+        const k = key(row);
+        if (!existing.has(k)) {
+          this.invoices.unshift(row);
+          existing.add(k);
+        }
+      }
+
+      this.saveToStorage();
+    } catch (e) {
+      console.warn('Evento SSE no es el JSON esperado:', raw);
+    }
+  }
+
+  clearInvoices(): void {
+    this.invoices = [];
+    localStorage.removeItem(this.STORAGE_KEY);
+  }
+
+  simulateIncoming(partial?: Partial<IncomingEnvelope>): void {
+    const now = new Date();
+
+    const mock = {
+      received_at: new Date().toISOString(),
+      client_ip: '172.17.0.3',
+      payload: {
+        data: [
+          {
+            numero_factura: null,
+            nombre_cliente: 'LOCATEC APLICACIONES',
+            nombre_proveedor: 'GUILLEM EXPORT, S.L.U.',
+            fecha: null,
+            nif_emision: 'B98165095',
+            nif_receptor: 'B42878389',
+            cif_lateral: 'B98165095',
+            base1: null, iva1: null, cuota1: null, recargo1: null,
+            base2: null, iva2: null, cuota2: null, recargo2: null,
+            base3: null, iva3: null, cuota3: null, recargo3: null,
+            base_retencion: null, porcentaje_retencion: null, cuota_retencion: null,
+            importe_total: null, metodo_pago: null, prefijo: '600',
+            valid: false
+          }
+        ]
+      }
+    };
+
+    const id = `sim-fixed-${Date.now()}`;
+    this.addLog(id, 'notification', mock);
+    // usa exactamente el mismo flujo que en producción
+    this.handleEnvelope(JSON.stringify(mock));
+  }
+
+
 
   simulateEvent(): void {
     // Enviar un evento de prueba al servidor
@@ -129,7 +238,7 @@ export class SseComponent implements OnInit, OnDestroy {
     this.lastEvent = null;
   }
 
-  private addLog(id: string, event: string, data: NotificationEvent): void {
+  private addLog(id: string, event: string, data: any): void {
     const log: EventLog = {
       id,
       event,

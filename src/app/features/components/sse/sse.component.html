@@ -12,6 +12,9 @@
         <button (click)="simulateEvent()" [disabled]="!isConnected" class="btn btn-success">
             Simular Evento (Test)
         </button>
+        <button (click)="simulateIncoming()" class="btn bttn-primary">
+            Simular Evento fijo (Test)
+        </button>
     </div>
 
     <div class="status-container">
@@ -70,6 +73,48 @@
             </div>
         </div>
     </div>
+    <section class="list">
+        <h2>Mis Facturas</h2>
+
+        <!-- Estados -->
+        <div *ngIf="!isConnected && invoices.length === 0 && !error" class="empty">
+            Cargando…
+        </div>
+
+        <div *ngIf="error" class="empty empty--error">
+            {{ error }}
+            <button class="btn btn--link" (click)="connect()">Reintentar</button>
+        </div>
+
+        <ng-container *ngIf="isConnected && !error && invoices.length === 0">
+            <div class="empty">Aún no hay facturas.</div>
+        </ng-container>
+
+        <!-- Lista -->
+        <div class="card" *ngFor="let inv of invoices">
+            <div class="card__left">
+                <div class="dot" [ngClass]="inv.valid ? 'dot--ok' : 'dot--error'"></div>
+
+                <strong class="filename">
+                    {{ buildFilename(inv) }}
+                </strong>
+
+                <small class="meta">
+                    {{ inv.received_at | date:'dd/MM/yyyy, HH:mm' }}
+                </small>
+            </div>
+
+            <div class="card__right">
+                <span class="badge" [ngClass]="inv.valid ? 'badge--ok' : 'badge--err'">
+                    {{ inv.valid ? 'Procesado' : 'Fallido' }}
+                </span>
+
+                <button class="btn btn--ghost" (click)="open(inv)">
+                    ✏️ Corregir
+                </button>
+            </div>
+        </div>
+    </section>
 
     <div class="logs">
         <h3>📋 Historial de Eventos</h3>
