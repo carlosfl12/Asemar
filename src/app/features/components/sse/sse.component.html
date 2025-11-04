@@ -1,0 +1,110 @@
+<div class="container">
+    <h1>Server-Sent Events - Modo Escucha Continua</h1>
+
+    <div class="controls">
+        <button (click)="toggleConnection()" [class.btn-danger]="isConnected" [class.btn-primary]="!isConnected"
+            class="btn">
+            {{ isConnected ? 'Desconectar' : 'Conectar' }}
+        </button>
+        <button (click)="clearLogs()" class="btn btn-secondary">
+            Limpiar Logs
+        </button>
+        <button (click)="simulateEvent()" [disabled]="!isConnected" class="btn btn-success">
+            Simular Evento (Test)
+        </button>
+    </div>
+
+    <div class="status-container">
+        <div class="status" [class.connected]="isConnected" [class.disconnected]="!isConnected">
+            <span class="status-icon">{{ isConnected ? '🟢' : '🔴' }}</span>
+            Estado: {{ isConnected ? 'Conectado - Esperando eventos...' : 'Desconectado' }}
+        </div>
+        <div class="stats">
+            <span>Total eventos: <strong>{{ eventLogs.length }}</strong></span>
+            <span *ngIf="lastEvent">Último: {{ lastEvent.time }}</span>
+        </div>
+    </div>
+
+    <div class="data-display">
+        <div class="card highlight">
+            <h3>📨 Último Evento Recibido</h3>
+            <div *ngIf="lastEvent" class="event-data">
+                <div class="data-row">
+                    <span class="label">ID:</span>
+                    <span class="value">{{ lastEvent.id }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Tipo:</span>
+                    <span class="value badge">{{ lastEvent.event }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Fecha/Hora:</span>
+                    <span class="value">{{ lastEvent.data.datetime }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Mensaje:</span>
+                    <span class="value">{{ lastEvent.data.message }}</span>
+                </div>
+                <div class="data-row">
+                    <span class="label">Valor Random:</span>
+                    <span class="value">{{ lastEvent.data.randomValue }}</span>
+                </div>
+            </div>
+            <div *ngIf="!lastEvent" class="no-data">
+                <p>⏳ Esperando el primer evento...</p>
+                <p class="hint">Los eventos aparecerán aquí automáticamente cuando se envíen desde el servidor</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📊 Estadísticas</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">{{ eventLogs.length }}</div>
+                    <div class="stat-label">Total Eventos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ isConnected ? '✓' : '✗' }}</div>
+                    <div class="stat-label">Conexión Activa</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="logs">
+        <h3>📋 Historial de Eventos</h3>
+        <div class="log-container">
+            <div *ngFor="let log of eventLogs; let i = index" class="log-entry" [class.new-entry]="i === 0">
+                <div class="log-header">
+                    <span class="log-time">🕐 {{ log.time }}</span>
+                    <span class="log-event">{{ log.event }}</span>
+                    <span class="log-id">ID: {{ log.id }}</span>
+                </div>
+                <pre class="log-data">{{ log.data | json }}</pre>
+            </div>
+            <p *ngIf="eventLogs.length === 0" class="no-data">
+                No hay eventos registrados todavía.
+                <br><br>
+                <span class="hint">
+                    💡 Tip: Mientras estés conectado, cualquier llamada a <code>send-event.php</code>
+                    enviará un evento que aparecerá aquí automáticamente.
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <div class="error" *ngIf="error">
+        <strong>⚠ Error:</strong> {{ error }}
+    </div>
+
+    <div class="info-box">
+        <h4>ℹ Cómo funciona:</h4>
+        <ol>
+            <li>Haz clic en <strong>"Conectar"</strong> para iniciar la escucha de eventos</li>
+            <li>El frontend quedará esperando eventos continuamente</li>
+            <li>Cuando llames a <code>send-event.php</code> desde cualquier lugar, el evento llegará automáticamente
+            </li>
+            <li>Puedes probar con el botón "Simular Evento" o llamando directamente al PHP</li>
+        </ol>
+    </div>
+</div>

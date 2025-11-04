@@ -11,7 +11,7 @@ export const routes: Routes = [
     },
     { path: 'notify', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
     { path: 'notify/:id', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
-    { path: 'sse', loadComponent: () => import('./core/sse.component').then(m => m.SseComponent) }
+    { path: 'facturas', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
 
-    // { path: '**', redirectTo: 'transfer' },
+    { path: '**', redirectTo: 'transfer' },
 ];

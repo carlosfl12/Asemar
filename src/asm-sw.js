@@ -11,9 +11,9 @@ self.addEventListener('push', (event) => {
             } catch { }
         }
 
-        const title = (data && data.title) || 'Notificación';
-        const body = (data && data.body) || '';
-        const url = (data && data.url) || '/asemar/notify';
+        const title = (data && data.title) || 'Ha entrado un cliente';
+        const body = (data && data.body) || 'haz click para entrar';
+        const url = (data && data.url) || '/facturas';
 
         await self.registration.showNotification(title, {
             body,
@@ -26,7 +26,7 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     // URL objetivo (con saneado)
-    const raw = (event.notification?.data && event.notification.data.url) || '/asemar/notify';
+    const raw = (event.notification?.data && event.notification.data.url) || '/facturas';
     const urlStr = String(raw).trim();
 
     event.waitUntil((async () => {

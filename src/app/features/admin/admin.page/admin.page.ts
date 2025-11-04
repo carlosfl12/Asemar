@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PushService } from '../../../services/push.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   standalone: true,
@@ -11,8 +12,8 @@ import { PushService } from '../../../services/push.service';
 })
 
 export class AdminPage implements OnInit {
+  private readonly serveUrl = environment.serveUrl;
   ngOnInit() {
-    // Asegura que la cola existe (por si navegas directo)
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     console.log(window.OneSignalDeferred);
   }
@@ -21,12 +22,14 @@ export class AdminPage implements OnInit {
     (window as any).OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async (OneSignal: any) => {
       await OneSignal.init({
-        appId: '41a4d282-847d-4a34-a61b-3e82a732204d',   // <-- tu APP ID
-        allowLocalhostAsSecureOrigin: true,               // para localhost
+        appId: '41a4d282-847d-4a34-a61b-3e82a732204d',
+        allowLocalhostAsSecureOrigin: true,
         serviceWorkerPath: 'onesignal/OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: '/asemar/onesignal/' } // respeta tu baseHref
-        // Más opciones: promptOptions, notifyButton, etc.
+        serviceWorkerParam: { scope: '/asemar/onesignal/' },
+        notificationClickHandlerMatch: 'exact',
+        notificationClickHandlerAction: 'navigate'
       });
+      OneSignal.Notifications.setDefaultUrl(`${this.serveUrl}/sse`);
       await OneSignal.login('admin');
       sessionStorage.setItem('isAdmin', '1');
 
