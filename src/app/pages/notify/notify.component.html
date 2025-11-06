@@ -6,42 +6,40 @@
                 <h1>Gestión de Facturas</h1>
             </div>
         </div>
-        <button class="btn btn--ghost" (click)="load()">↻ Recargar</button>
     </header>
 
-    <section class="list">
-        <h2>Facturas erróneas</h2>
-
-        <div *ngIf="loading()" class="empty">Cargando…</div>
-        <div *ngIf="error()" class="empty empty--error">
-            {{ error() }}
-            <button class="btn btn--link" (click)="load()">Reintentar</button>
+    <div class="header">
+        <div class="received" *ngIf="lastReceivedAt() as ts">
+            Último lote: {{ ts | date:'dd/MM/yyyy, HH:mm:ss' }}
         </div>
+    </div>
 
-        <ng-container *ngIf="!loading() && !error() && invoices().length === 0">
-            <div class="empty">Aún no hay facturas.</div>
-        </ng-container>
-
-        <div class="card" *ngFor="let inv of invoices()">
-            <div class="card__left">
-                <div class="dot dot--error" *ngIf="inv.status === 'err'"></div>
-                <div class="dot dot--ok" *ngIf="inv.status === 'ok'"></div>
-                <strong class="filename">{{ inv.fileName }}</strong>
-                <small class="meta">{{ inv.createdAt | date:'dd/MM/yyyy, HH:mm' }}</small>
+    <div class="list" *ngIf="rows().length; else emptyTpl">
+        <div class="card" *ngFor="let row of rows(); let i = index">
+            <div class="left">
+                <span class="dot" [class.ok]="isOk(row)" [class.err]="!isOk(row)"></span>
+                <div class="meta">
+                    <div class="name">{{ filename(row, i) }}</div>
+                    <div class="sub">
+                        <span class="client" *ngIf="row?.nombre_cliente as c">Cliente: {{ c }}</span>
+                        <span class="prov" *ngIf="row?.nombre_proveedor as p">Proveedor: {{ p }}</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="card__right">
-                <span class="badge" [ngClass]="badgeClass(inv.status)">
-                    {{ inv.status === 'err' ? 'Fallido' : (inv.status === 'ok' ? 'Procesado' : 'Pendiente') }}
-                </span>
-                <button class="btn btn--ghost" (click)="open(inv)">
-                    ✏️ Corregir
-                </button>
+            <div class="right">
+                <span class="chip" [ngClass]="badgeClass(row)">{{ statusLabel(row) }}</span>
+                <button class="btn" (click)="openRow(row)">Corregir</button>
             </div>
         </div>
-    </section>
+    </div>
+
+    <ng-template #emptyTpl>
+        <div class="empty">Aún no hay mensajes recibidos.</div>
+    </ng-template>
+
 
     <!-- Modal visualizador (overlay) -->
-    <app-invoice-visualizer *ngIf="selected() as sel" [invoice]="sel" (close)="closeModal()" (fixed)="onInvoiceFixed()">
+    <app-invoice-visualizer [row]="selectedRow()" (close)="closeModal()" (saved)="onFixedAndClose($event)">
     </app-invoice-visualizer>
 </div>

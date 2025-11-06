@@ -1,73 +1,58 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+// invoice-visualizer.component.ts (solo lo esencial para el HTML)
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { InvoiceItem } from '../types';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { InvoiceRow } from '../../../models/invoice.models';
 
 @Component({
   selector: 'app-invoice-visualizer',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule], // ⬅️ IMPORTANTE
   templateUrl: './invoice-visualizer.component.html',
   styleUrls: ['./invoice-visualizer.component.scss'],
 })
-export class InvoiceVisualizerComponent {
-  @Input() invoice!: InvoiceItem;
+export class InvoiceVisualizerComponent implements OnChanges {
+  @Input() row: InvoiceRow | null = null;
   @Output() close = new EventEmitter<void>();
-  @Output() fixed = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<Partial<InvoiceRow>>();
 
-  private sanitizer = inject(DomSanitizer);
-  safePdfUrl!: SafeResourceUrl;
+  form: FormGroup;
 
-  fb = new FormBuilder();
-  form = this.fb.group({
-    number: [''],
-    date: [''],
-    supplierName: [''],
-    supplierVat: [''],
-    subtotal: [0, [Validators.min(0)]],
-    vat: [0, [Validators.min(0)]],
-    total: [0, [Validators.min(0)]],
-  });
-
-  async ngOnInit() {
-    // Rellenar formulario
-    const e = this.invoice.extracted ?? {};
-    this.form.patchValue({
-      number: e.number ?? '',
-      date: e.date ?? '',
-      supplierName: e.supplierName ?? '',
-      supplierVat: e.supplierVat ?? '',
-      subtotal: e.subtotal ?? 0,
-      vat: e.vat ?? 0,
-      total: e.total ?? 0,
+  constructor(private fb: FormBuilder) {
+    this.form = this.fb.group({
+      numero_factura: [null],
+      fecha: [null],
+      nombre_proveedor: [null],
+      nif_emision: [null],
+      base1: [null],
+      iva1: [null],
+      importe_total: [null],
+      valid: [false],
     });
+  }
 
-    // --- Sanear URL del PDF ---
-    const raw = this.invoice.pdfUrl;
-
-    // valida mismo origen
-    const urlObj = new URL(raw, window.location.origin);
-    if (urlObj.origin !== window.location.origin) {
-      this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlObj.href);
-    } else {
-      this.safePdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlObj.href);
+  ngOnChanges(changes: SimpleChanges): void {
+    if ('row' in changes && this.row) {
+      this.form.patchValue(this.row); // carga los valores en el form
     }
   }
 
-  async save() {
-    const payload = { id: this.invoice.id, corrections: this.form.value };
-    try {
-      const res = await fetch('/asemar-api/push/confirm-invoice.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      this.close.emit();
-    } catch (e) {
-      alert('No se pudo guardar. Revisa la consola.');
-      console.error(e);
-    }
+  cancel() { this.close.emit(); }
+
+  save() {
+    // emite solo lo que hay en el form; el padre ya sabe qué fila es
+    this.saved.emit(this.form.value as Partial<InvoiceRow>);
+  }
+
+  // opcional, por si lo usas en el título
+  filename(): string {
+    const v = this.form.value as any;
+    const nf = (v.numero_factura ?? this.row?.numero_factura ?? '').toString().trim();
+    if (nf) return `${nf}.pdf`;
+    const pref = (v.prefijo ?? (this.row as any)?.prefijo ?? 'DOC').toString().trim();
+    const baseSrc = v.nombre_proveedor ?? this.row?.nombre_proveedor
+      ?? v.nombre_cliente ?? (this.row as any)?.nombre_cliente ?? '0000';
+    const base = String(baseSrc).replace(/\s+/g, '').slice(0, 6).toUpperCase();
+    return `${pref}-${base}.pdf`;
   }
 }

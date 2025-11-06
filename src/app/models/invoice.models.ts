@@ -25,6 +25,7 @@ export interface InvoiceRow {
     metodo_pago: string | null;
     prefijo: string | null;
     valid: boolean;
+    url: string | null;
 }
 
 export interface IncomingEnvelope {

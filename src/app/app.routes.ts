@@ -9,9 +9,10 @@ export const routes: Routes = [
         loadComponent: () =>
             import('./features/admin/admin.page/admin.page').then(m => m.AdminPage),
     },
-    { path: 'notify', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
-    { path: 'notify/:id', loadComponent: () => import('./pages/notify/notify.component').then(m => m.NotifyComponent) },
-    { path: 'facturas', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
+    { path: 'facturas', loadComponent: () => import('./features/components/invoice-manager/invoice-manager.component').then(m => m.InvoiceManagerComponent) },
+    { path: 'facturas/:id', loadComponent: () => import('./features/components/invoice-manager/invoice-manager.component').then(m => m.InvoiceManagerComponent) },
+    { path: 'notify/:id', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
+    { path: 'notify', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
 
-    { path: '**', redirectTo: 'transfer' },
+    // { path: '**', redirectTo: 'transfer' },
 ];

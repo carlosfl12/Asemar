@@ -1,8 +1,17 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { InvoiceRow, IncomingEnvelope, StoredRow } from '../../../models/sse.models';
+import { InvoiceRow, IncomingEnvelope, StoredRow } from '../../../models/invoice.models';
+import { Router } from '@angular/router';
+import { InvoiceVisualizerComponent } from '../../../pages/notify/invoice-visualizer/invoice-visualizer.component';
+import { WebSocketService } from '../web-socket-service/web-socket-service.component';
+import { Subscription } from 'rxjs';
 
+interface RealTimeData {
+  value: number;
+  timestamp: number | string;
+  // otras propiedades...
+}
 interface NotificationEvent {
   timestamp: number;
   datetime: string;
@@ -33,22 +42,35 @@ export class SseComponent implements OnInit, OnDestroy {
   lastEvent: EventLog | null = null;
   eventLogs: EventLog[] = [];
   error: string | null = null;
+  router = inject(Router);
 
-  // Guardar los registros que vayan llegando por evento
   invoices: StoredRow[] = [];
+  selectedInvoice: any | null = null;
+  showVisualizer = false;
   private readonly STORAGE_KEY = 'asm_sse_invoices';
 
-  // URLs - ajusta según tu servidor
+  // URLs - Usar proxy local para evitar CORS
   private readonly SSE_URL = '/sse';
-  private readonly SEND_EVENT_URL = '/send-event';
+  private readonly SEND_EVENT_URL = '/send_event';
 
   constructor(private http: HttpClient) { }
 
+  wsService = inject(WebSocketService);
+  public ultimoValor: number | null = null;
+  public datosRecibidos: RealTimeData[] = [];
+  subscription!: Subscription;
 
-  ngOnInit(): void {
-    // Auto-conectar al cargar
-    this.loadFromStorage();
-    this.connect();
+  ngOnInit() {
+    // this.dashboard.setMenuItem(this.menuItemId);
+    this.subscription = this.wsService.messages$.subscribe(
+      (data) => {
+        this.ultimoValor = data.value;
+        console.log(data);
+      },
+      (error) => {
+        console.error('Error en la suscripción de datos:', error);
+      }
+    );
   }
 
   ngOnDestroy(): void {
@@ -82,7 +104,10 @@ export class SseComponent implements OnInit, OnDestroy {
     }
 
     try {
-      this.eventSource = new EventSource(this.SSE_URL);
+      // EventSource con withCredentials para CORS
+      this.eventSource = new EventSource(this.SSE_URL, {
+        withCredentials: true
+      });
 
       this.eventSource.onopen = () => {
         console.log('✅ Conexión SSE establecida - Esperando eventos...');
@@ -94,21 +119,38 @@ export class SseComponent implements OnInit, OnDestroy {
         console.error('❌ Error en SSE:', error);
         this.error = 'Error de conexión con el servidor';
         this.isConnected = false;
+
+        // Intentar reconectar después de 5 segundos
+        setTimeout(() => {
+          if (!this.isConnected) {
+            console.log('🔄 Intentando reconectar...');
+            this.disconnect();
+            this.connect();
+          }
+        }, 5000);
       };
 
-      // Handler genérico: cualquier mensaje del SSE
+      // Handler genérico
       this.eventSource.onmessage = (event: MessageEvent) => {
+        console.log('📨 Mensaje SSE recibido:', event.data);
         this.handleEnvelope(event.data);
       }
 
-      // Escuchar el evento 'notification' (o cualquier otro tipo que envíes)
+      // Evento 'notification'
       this.eventSource.addEventListener('notification', (event: MessageEvent) => {
-        console.log('📨 Evento recibido:', event);
+        console.log('🔔 Evento notification recibido:', event);
         const data = JSON.parse(event.data);
         this.addLog(event.lastEventId, 'notification', data);
       });
 
-      // Puedes agregar más tipos de eventos aquí
+      // Evento 'connected'
+      this.eventSource.addEventListener('connected', (event: MessageEvent) => {
+        console.log('🔗 Evento connected recibido:', event);
+        const data = JSON.parse(event.data);
+        this.addLog(event.lastEventId, 'connected', data);
+      });
+
+      // Evento 'alert'
       this.eventSource.addEventListener('alert', (event: MessageEvent) => {
         const data = JSON.parse(event.data);
         this.addLog(event.lastEventId, 'alert', data);
@@ -121,7 +163,6 @@ export class SseComponent implements OnInit, OnDestroy {
   }
 
   buildFilename(inv: any): string {
-    // arma un nombre "bonito" si no tienes nombre de archivo real
     const base =
       inv?.numero_factura ??
       `${inv?.prefijo ?? '000'}-${inv?.nif_emision ?? 'SN'}`;
@@ -129,8 +170,24 @@ export class SseComponent implements OnInit, OnDestroy {
   }
 
   open(inv: any): void {
-    // TODO: abre modal/ruta de corrección
-    console.log('Corregir →', inv);
+    this.selectedInvoice = inv;
+    this.showVisualizer = true;
+  }
+
+  closeModal() {
+    this.showVisualizer = false;
+    this.selectedInvoice = null;
+  }
+
+  onInvoiceFixed(_e?: any) {
+    this.closeModal();
+  }
+
+  private getInvoiceId(inv: any): string {
+    const base =
+      inv?.numero_factura ??
+      `${inv?.prefijo ?? '000'}-${inv?.nif_emision ?? 'SN'}`;
+    return String(base).replace(/\.pdf$/i, '');
   }
 
   disconnect(): void {
@@ -208,14 +265,10 @@ export class SseComponent implements OnInit, OnDestroy {
 
     const id = `sim-fixed-${Date.now()}`;
     this.addLog(id, 'notification', mock);
-    // usa exactamente el mismo flujo que en producción
     this.handleEnvelope(JSON.stringify(mock));
   }
 
-
-
   simulateEvent(): void {
-    // Enviar un evento de prueba al servidor
     const testData = {
       message: 'Evento de prueba desde Angular',
       event_type: 'notification',
@@ -224,13 +277,18 @@ export class SseComponent implements OnInit, OnDestroy {
 
     this.http.post(this.SEND_EVENT_URL, testData).subscribe({
       next: (response) => {
-        console.log('✅ Evento enviado:', response);
-      },
-      error: (error) => {
-        console.error('❌ Error al enviar evento:', error);
-        this.error = 'Error al enviar el evento de prueba';
+        console.log(response);
       }
     });
+    // this.http.post(this.SEND_EVENT_URL, testData).subscribe({
+    //   next: (response) => {
+    //     console.log('✅ Evento enviado:', response);
+    //   },
+    //   error: (error) => {
+    //     console.error('❌ Error al enviar evento:', error);
+    //     this.error = 'Error al enviar el evento de prueba';
+    //   }
+    // });
   }
 
   clearLogs(): void {
@@ -249,7 +307,6 @@ export class SseComponent implements OnInit, OnDestroy {
     this.lastEvent = log;
     this.eventLogs.unshift(log);
 
-    // Opcional: limitar el número de logs guardados
     if (this.eventLogs.length > 50) {
       this.eventLogs = this.eventLogs.slice(0, 50);
     }

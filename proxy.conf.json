@@ -1,26 +1,26 @@
 {
-    "/asemar-api": {
-        "target": "http://localhost:9090",
-        "secure": false,
-        "changeOrigin": true
+  "/asemar-api": {
+    "target": "http://localhost:9090",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/sse": {
+    "target": "https://demo.esphera.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/sse": "/ws/n8n/signals_to_frontend/test.php"
     },
-    "/sse": {
-        "target": "https://demo.esphera.ai",
-        "secure": true,
-        "changeOrigin": true,
-        "logLevel": "debug",
-        "pathRewrite": {
-            "^/sse": "/ws/n8n/signals_to_frontend/sse-server.php"
-        },
-        "proxyTimeout": 0
-    },
-    "/send-event": {
-        "target": "https://demo.esphera.ai",
-        "secure": true,
-        "changeOrigin": true,
-        "logLevel": "debug",
-        "pathRewrite": {
-            "^/send-event": "/ws/n8n/signals_to_frontend/send-event.php"
-        }
+    "proxyTimeout": 0
+  },
+  "/send_event": {
+    "target": "https://demo.esphera.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/send_event": "/ws/n8n/signals_to_frontend/test_event.php"
     }
+  }
 }

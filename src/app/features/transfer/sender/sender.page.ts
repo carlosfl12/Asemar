@@ -48,7 +48,6 @@ export class SenderPage implements OnInit {
   async ngOnInit() {
 
     try {
-      // if (sessionStorage.getItem('isAdmin') && sessionStorage.getItem("isAdmin") === '1') return;
       await fetch(`${this.api_serve}/onesignal/notify-enter.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

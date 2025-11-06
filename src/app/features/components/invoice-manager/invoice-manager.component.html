@@ -1,0 +1,105 @@
+<!-- Barra superior -->
+<header class="topbar">
+    <div class="brand">
+        <span class="icon">🧾</span>
+        <div>
+            <h1>Gestión de Facturas</h1>
+            <p>Sistema de procesamiento automático</p>
+        </div>
+    </div>
+
+    <button class="btn-outline">Cerrar Sesión</button>
+</header>
+
+<main class="container">
+    <!-- Lista -->
+    <section class="list">
+        <h2>Mis Facturas</h2>
+
+        <div class="card" *ngFor="let row of invoices()">
+            <div class="left">
+                <span class="error-dot">!</span>
+                <div class="meta">
+                    <div class="name">{{ row.fileName }}</div>
+                    <div class="date">{{ row.createdAt }}</div>
+                </div>
+            </div>
+
+            <div class="right">
+                <span class="chip danger" *ngIf="row.status === 'fallido'">Fallido</span>
+                <button class="btn" (click)="open(row)">Corregir</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Modal -->
+<div class="modal-backdrop" *ngIf="selectedInvoice() as inv" (click)="closeModal()"></div>
+
+<div class="modal" *ngIf="selectedInvoice() as inv" role="dialog" aria-modal="true">
+    <div class="modal-header">
+        <h3>Editar Factura: {{ inv.fileName }}</h3>
+        <button class="close" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+        <!-- PDF -->
+        <div class="pdf-pane">
+            <iframe [src]="pdfUrl() | safeUrl" title="Vista PDF"></iframe>
+        </div>
+
+        <!-- Formulario ligado 1:1 a InvoiceRow -->
+        <form class="form" [formGroup]="form" (ngSubmit)="saveAndSend()">
+            <h4>Datos de la Factura</h4>
+
+            <label> Número de Factura
+                <input formControlName="numero_factura" placeholder="Ej: F-2024-001">
+            </label>
+
+            <label> Fecha de Factura
+                <input type="date" formControlName="fecha" placeholder="dd/mm/aaaa">
+            </label>
+
+            <label> Nombre del Proveedor
+                <input formControlName="nombre_proveedor" placeholder="Nombre de la empresa">
+            </label>
+
+            <label> NIF/CIF Proveedor (emisión)
+                <input formControlName="nif_emision" placeholder="Ej: B12345678">
+            </label>
+
+            <label> NIF/CIF Receptor
+                <input formControlName="nif_receptor" placeholder="Ej: B12345678">
+            </label>
+
+            <label> Subtotal (€)
+                <input type="number" step="0.01" formControlName="base1">
+            </label>
+
+            <label> IVA (% o €)
+                <input type="number" step="0.01" formControlName="iva1">
+            </label>
+
+            <label> Importe Total (€)
+                <input type="number" step="0.01" formControlName="importe_total">
+            </label>
+
+            <!-- Campos adicionales útiles -->
+            <label> Método de pago
+                <input formControlName="metodo_pago" placeholder="Transferencia, tarjeta…">
+            </label>
+
+            <label> Prefijo
+                <input formControlName="prefijo" placeholder="Ej: F-2024">
+            </label>
+
+            <!-- Ocultos en UI pero parte del modelo -->
+            <input type="hidden" formControlName="url">
+            <input type="hidden" formControlName="valid">
+
+            <div class="actions">
+                <button type="submit" class="btn-primary">💾 Guardar y Enviar</button>
+            </div>
+        </form>
+    </div>
+</div>

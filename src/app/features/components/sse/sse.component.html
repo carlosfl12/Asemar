@@ -9,7 +9,7 @@
         <button (click)="clearLogs()" class="btn btn-secondary">
             Limpiar Logs
         </button>
-        <button (click)="simulateEvent()" [disabled]="!isConnected" class="btn btn-success">
+        <button (click)="simulateEvent()" [disabled]="isConnected" class="btn btn-success">
             Simular Evento (Test)
         </button>
         <button (click)="simulateIncoming()" class="btn bttn-primary">
@@ -152,4 +152,8 @@
             <li>Puedes probar con el botón "Simular Evento" o llamando directamente al PHP</li>
         </ol>
     </div>
+
+    <!-- <app-invoice-visualizer *ngIf="showVisualizer && selectedInvoice" [invoice]="selectedInvoice" (close)="closeModal()"
+        (fixed)="onInvoiceFixed($event)">
+    </app-invoice-visualizer> -->
 </div>

@@ -6,6 +6,13 @@ import { Payload, InvoiceItem } from './types';
 import { InvoiceVisualizerComponent } from './invoice-visualizer/invoice-visualizer.component';
 import { SseService } from '../../core/sse.service';
 import { environment } from '../../../environments/environment';
+import { WebSocketService } from '../../features/components/web-socket-service/web-socket-service.component';
+import { Subscription } from 'rxjs';
+import { InvoiceRow } from '../../models/invoice.models';
+interface RealTimeData {
+  value: number;
+  timestamp: number | string;
+}
 
 @Component({
   selector: 'app-notify',
@@ -14,93 +21,138 @@ import { environment } from '../../../environments/environment';
   templateUrl: './notify.component.html',
   styleUrls: ['./notify.component.scss'],
 })
+
 export class NotifyComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private readonly api_url = environment.apiUrl;
+  rows = signal<InvoiceRow[]>([]);
 
-  loading = signal(true);
-  error = signal<string | null>(null);
-  data = signal<Payload | null>(null);
-
-  okCounter = signal<number>(0);
-  totalCounter = computed(() => this.data()?.invoices.length ?? 0);
+  selectedRow = signal<InvoiceRow | null>(null);
+  selectedIndex = signal<number | null>(null);
 
   private paramMapSig = toSignal(this.route.paramMap, {
     initialValue: this.route.snapshot.paramMap,
   });
 
-  selected = signal<InvoiceItem | null>(null);
+  lastReceivedAt = signal<string | null>(null);
 
-  invoices = computed(() => this.data()?.invoices ?? []);
+  wsService = inject(WebSocketService);
+  public ultimoValor: number | null = null;
+  public datosRecibidos: RealTimeData[] = [];
+  subscription!: Subscription;
 
-  constructor(private sse: SseService) {
+  ngOnInit() {
+    // this.dashboard.setMenuItem(this.menuItemId);
+    this.subscription = this.wsService.messages$.subscribe(
+      (data) => {
+        this.ultimoValor = data.value;
+        console.log(data);
+        this.renderIncoming(data, true);
+      },
+      (error) => {
+        console.error('Error en la suscripción de datos:', error);
+      }
+
+    );
+  }
+
+  constructor() {
     effect(() => {
-      const id = this.paramMapSig()?.get('id');
+      const id = this.paramMapSig()?.get('id'); // '/facturas/:id'
       if (!id) {
-        this.selected.set(null);
+        this.selectedRow.set(null); // no hay id => modal cerrado
         return;
       }
-      const found = this.invoices().find(i => i.id === id) ?? null;
-      this.selected.set(found);
+
+      // Busca la fila por id (si tu id lo generas tú, asegúrate de asignarlo en handleIncoming)
+      const found = this.rows().find((r: any) => r?.id === id) ?? null;
+      this.selectedRow.set(found);
     });
   }
 
-  async ngOnInit() {
-    await this.load();
-    this.sse.stream<Payload>(`${this.api_url}/asemar-api/push/stream.php`)
-      .subscribe(payload => {
-        this.data.set(payload);
-      });
-  }
+  renderIncoming(raw: unknown, append = false): void {
+    let data: any = (raw && typeof raw === 'object' && 'value' in (raw as any))
+      ? (raw as any).value
+      : raw;
 
-  async load() {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      const res = await fetch(`${this.api_url}/asemar-api/push/poll.php`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: Payload = await res.json();
-      this.data.set(json);
-    } catch (e: any) {
-      this.error.set(e?.message ?? 'No se pudieron cargar los datos');
-    } finally {
-      this.loading.set(false);
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch { }
     }
-  }
 
-  async loadCounters() {
-    try {
-      const res = await fetch('/asemar-api/push/counter.php?action=get', { cache: 'no-store' })
-      if (res.ok) {
-        const json = await res.json();
-        this.okCounter.set(Number(json?.ok ?? 0));
-      }
-    } catch {
+    let rows: InvoiceRow[] = [];
+    const pick = (x: any): InvoiceRow[] =>
+      Array.isArray(x) ? (x as InvoiceRow[]) :
+        (x && typeof x === 'object') ? [x as InvoiceRow] : [];
 
+    if (data.data) {
+      rows = pick(data.data);
+    } else {
+      rows = pick(data);
     }
+
+    this.rows.update(curr => append ? [...curr, ...rows] : [...rows]);
+    this.lastReceivedAt.set(new Date().toISOString());
   }
 
-  async onInvoiceFixed() {
-    try {
-      await fetch('/asemar-api/push/counter.php?action=inc', { method: 'POST' });
-    } catch { }
-    await this.loadCounters();
+
+  filename(row: InvoiceRow, idx: number): string {
+    const nf = (row as any)?.numero_factura ? String((row as any).numero_factura).trim() : '';
+    if (nf) return `${nf}.pdf`;
+    const pref = (row as any)?.prefijo ? String((row as any).prefijo).trim() : 'DOC';
+    const base = String((row as any)?.nombre_proveedor ?? (row as any)?.nombre_cliente ?? '0000')
+      .replace(/\s+/g, '')
+      .slice(0, 6)
+      .toUpperCase();
+    return `${pref}-${base}${String(idx).padStart(2, '0')}.pdf`;
   }
 
-  open(invoice: InvoiceItem) {
-    this.router.navigate(['/notify', invoice.id]);
+  buildFilename(row: InvoiceRow, idx: number): string {
+    const nf = (row as any)?.numero_factura ? String((row as any).numero_factura).trim() : '';
+    if (nf) return `${nf}.pdf`;
+
+    const pref = (row as any)?.prefijo ? String((row as any).prefijo).trim() : 'DOC';
+    const base = String((row as any)?.nombre_proveedor ?? (row as any)?.nombre_cliente ?? '0000')
+      .replace(/\s+/g, '')
+      .slice(0, 6)
+      .toUpperCase();
+
+    return `${pref}-${base}${String(idx).padStart(2, '0')}.pdf`;
   }
 
-  closeModal() {
-    this.router.navigate(['/notify']);
+  onFixedAndClose(patch?: Partial<InvoiceRow>) {
+    if (patch && this.selectedIndex() !== null) {
+      const i = this.selectedIndex()!;
+      const clone = [...this.rows()];
+      clone[i] = { ...clone[i], ...patch };
+      this.rows.set(clone);
+    }
+    this.closeModal();
   }
 
-  badgeClass(status: string) {
-    return {
-      ok: 'badge--ok',
-      failed: 'badge--failed',
-      pending: 'badge--pending',
-    }[status] ?? 'badge--pending';
+  open(index: number) {
+    this.router.navigate(['/facturas', index]);
+  }
+
+  closeModal(): void {
+    this.router.navigate(['/facturas']).then(() => {
+      window.location.reload();
+    });
+  }
+
+  isOk(row: InvoiceRow): boolean {
+    return !!(row as any)?.valid;
+  }
+
+  badgeClass(row: InvoiceRow): string {
+    return this.isOk(row) ? 'badge--ok' : 'badge--failed';
+  }
+
+  statusLabel(row: InvoiceRow): string {
+    return this.isOk(row) ? 'Correcto' : 'Fallido';
+  }
+
+  openRow(row: InvoiceRow) {
+    // navega o abre modal con la fila (si tienes id propio úsalo)
+    this.router.navigate(['/facturas']); // ajusta si necesitas un id
   }
 }
