@@ -100,7 +100,7 @@ export class SenderPage implements OnInit {
   }
 
 
-  // Relleno rápido de demo
+  // Relleno de la demo
   fillDemo() {
     while (this.datosFaltan.length) this.datosFaltan.removeAt(0);
     ['NIF', 'Dirección de facturación'].forEach(v => this.datosFaltan.push(this.fb.control(v)));

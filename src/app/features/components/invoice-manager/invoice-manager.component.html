@@ -14,7 +14,10 @@
 <main class="container">
     <!-- Lista -->
     <section class="list">
-        <h2>Mis Facturas</h2>
+        <div>
+            <h2>Mis Facturas</h2>
+            <p>Facturas: </p>
+        </div>
 
         <div class="card" *ngFor="let row of invoices()">
             <div class="left">
@@ -38,14 +41,33 @@
 
 <div class="modal" *ngIf="selectedInvoice() as inv" role="dialog" aria-modal="true">
     <div class="modal-header">
-        <h3>Editar Factura: {{ inv.fileName }}</h3>
-        <button class="close" (click)="closeModal()">✕</button>
+        <h3>
+            Editar Factura: {{ inv.fileName }}
+            <small *ngIf="lastNumDoc() !== null" style="font-weight:400;color:#6b7280;margin-left:8px;">
+                · Doc #{{ lastNumDoc() }}
+            </small>
+        </h3>
+
+        <div class="modal-actions" style="display:flex;gap:8px;align-items:center;">
+            <a *ngIf="pdfUrl()" [href]="pdfUrl()" target="_blank" rel="noopener" class="btn-outline"
+                style="text-decoration:none;">
+                Abrir PDF ↗
+            </a>
+            <button class="close" (click)="closeModal()">✕</button>
+        </div>
     </div>
+
 
     <div class="modal-body">
         <!-- PDF -->
         <div class="pdf-pane">
-            <iframe [src]="pdfUrl() | safeUrl" title="Vista PDF"></iframe>
+            <ngx-extended-pdf-viewer [src]="resolvedSrc" [height]="'100%'" [zoom]="'page-width'"
+                [showOpenFileButton]="false" [showSecondaryToolbarButton]="true">
+            </ngx-extended-pdf-viewer>
+
+            <!-- <iframe [src]="'https://pr99.esphera.ai/uploads/00_25003388.pdf'"></iframe> -->
+            <!-- <pdf-viewer [src]="'https://pr99.esphera.ai/uploads/00_25003388.pdf'" [render-text]="true"
+                [original-size]="false" ></pdf-viewer> -->
         </div>
 
         <!-- Formulario ligado 1:1 a InvoiceRow -->
@@ -65,11 +87,11 @@
             </label>
 
             <label> NIF/CIF Proveedor (emisión)
-                <input formControlName="nif_emision" placeholder="Ej: B12345678">
+                <input formControlName="nif_emision">
             </label>
 
             <label> NIF/CIF Receptor
-                <input formControlName="nif_receptor" placeholder="Ej: B12345678">
+                <input formControlName="nif_receptor">
             </label>
 
             <label> Subtotal (€)

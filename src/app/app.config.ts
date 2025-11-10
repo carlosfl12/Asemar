@@ -1,9 +1,10 @@
-import { ApplicationConfig, isDevMode, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ApplicationConfig, importProvidersFrom, isDevMode, provideZoneChangeDetection } from '@angular/core';
+import { provideRouter, withHashLocation } from '@angular/router';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { HttpClient, provideHttpClient, withFetch } from '@angular/common/http';
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 
 if (environment.production === true) {
   isDevMode()
@@ -12,8 +13,9 @@ if (environment.production === true) {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
-    provideHttpClient(withFetch())
+    provideRouter(routes, withHashLocation()),
+    provideHttpClient(withFetch()),
+    importProvidersFrom(NgxExtendedPdfViewerModule),
   ]
 
 };

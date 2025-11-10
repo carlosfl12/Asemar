@@ -22,5 +22,14 @@
     "pathRewrite": {
       "^/send_event": "/ws/n8n/signals_to_frontend/test_event.php"
     }
+  },
+  "/api": {
+    "target": "https://pr99.esphera.ai",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/send_event": "/backend/api/index.php"
+    }
   }
 }

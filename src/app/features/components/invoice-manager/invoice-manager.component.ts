@@ -6,7 +6,9 @@ import { SafeUrlPipe } from '../../../shared/safe-url.pipe';
 import { InvoiceRow } from '../../../models/invoice.models';
 import { WebSocketService } from '../web-socket-service/web-socket-service.component';
 import { Subscription } from 'rxjs';
-import { map } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
+import { PdfViewerModule } from 'ng2-pdf-viewer';
 
 interface RealTimeData {
   value: number;
@@ -25,7 +27,7 @@ interface UiInvoiceItem {
 @Component({
   selector: 'app-invoice-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SafeUrlPipe],
+  imports: [CommonModule, ReactiveFormsModule, NgxExtendedPdfViewerModule, PdfViewerModule],
   templateUrl: './invoice-manager.component.html',
   styleUrls: ['./invoice-manager.component.scss'],
 })
@@ -33,37 +35,11 @@ export class InvoiceManagerComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
+  private readonly apiUrl = environment.apiUrl;
+  lastNumDoc = signal<number | null>(null);
 
   // TEST
-  invoices = signal<UiInvoiceItem[]>([
-    {
-      id: 1,
-      fileName: '0123–3164667128.pdf',
-      createdAt: '28/10/2025, 11:05:28',
-      status: 'fallido',
-      row: {
-        numero_factura: null,
-        nombre_cliente: 'LOCATEC APLICACIONES',
-        nombre_proveedor: 'GUILLEM EXPORT, S.L.U.',
-        fecha: null,
-        nif_emision: null,
-        nif_receptor: null,
-        cif_lateral: null,
-        base1: 0,
-        iva1: 0,
-        cuota1: 0,
-        recargo1: 0,
-        base2: null, iva2: null, cuota2: null, recargo2: null,
-        base3: null, iva3: null, cuota3: null, recargo3: null,
-        base_retencion: null, porcentaje_retencion: null, cuota_retencion: null,
-        importe_total: 0,
-        metodo_pago: null,
-        prefijo: null,
-        valid: false,
-        url: '/assets/invoices/00_25002805.pdf'
-      }
-    }
-  ]);
+  invoices = signal<UiInvoiceItem[]>([]);
 
   selectedId = signal<string | null>(null);
   selectedInvoice = computed(() =>
@@ -130,31 +106,82 @@ export class InvoiceManagerComponent implements OnInit {
   subscription!: Subscription;
 
   ngOnInit() {
+    this.loadAll();
     this.subscription = this.wsService.messages$.subscribe({
-      next: (data: any) => {
-        this.ultimoValor = data?.value ?? data;
-        const payload = this.getPayload(data);
-        console.log(payload);
+      next: (evt: any) => {
+        const payload = evt?.data ?? evt?.value ?? evt ?? null;
+        const pdfUrl = evt?.url ?? payload?.url ?? null;
+        const numDoc = evt?.num_doc ?? null;
+        console.log("DATA RECIBIDA: ", evt);
+
+        if (numDoc !== null && numDoc !== undefined) {
+          this.lastNumDoc.set(Number(numDoc));
+        }
+
+        if (!payload) return;
 
         if (Array.isArray(payload)) {
-          const mapped = payload.map((row: InvoiceRow, idx: number) => this.toUiItem(row, idx));
+          const mapped = payload.map((row: any, i: number) => {
+            if (!row.url && pdfUrl) row.url = pdfUrl;
+            return this.toUiItem(row as InvoiceRow, i + 1);
+          });
           this.invoices.set(mapped);
-        } else if (payload && typeof payload === 'object') {
-          const item = this.toUiItem(payload as InvoiceRow, this.invoices().length + 1);
+        } else {
+          const row = payload as InvoiceRow;
+          if (!row.url && pdfUrl) row.url = pdfUrl;
+
+          const item = this.toUiItem(row, this.invoices().length + 1);
+
           this.invoices.update(list => {
-            const key = (payload as InvoiceRow).numero_factura ?? item.id;
-            const i = list.findIndex(x => (x.row.numero_factura ?? x.id) === key);
-            if (i >= 0) {
+            const ix = list.findIndex(x => String(x.id) === String(item.id));
+            if (ix >= 0) {
               const copy = [...list];
-              copy[i] = { ...copy[i], row: item.row, fileName: item.fileName, status: item.status };
+              copy[ix] = { ...copy[ix], row: item.row, fileName: item.fileName, status: item.status };
               return copy;
             }
             return [item, ...list];
           });
+
+          const opened = this.selectedInvoice();
+          if (opened && String(opened.id) === String(item.id)) {
+            this.patchRowOnlyFilled(item.row);
+          }
         }
       },
-      error: err => console.error('Error en la suscripción de datos:', err)
+      error: err => console.error('WS error:', err),
     });
+  }
+
+  get resolvedSrc(): string {
+    if (!this.pdfUrl() || typeof this.pdfUrl() !== 'string') return this.pdfUrl();
+    const m = this.pdfUrl().match(/https?:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
+    return m?.[1] ? `https://drive.google.com/uc?export=download&id=${m[1]}` : this.pdfUrl();
+  }
+
+  private hashKey(input: string): string {
+    let h = 5381;
+    for (let i = 0; i < input.length; i++) {
+      h = ((h << 5) + h) + input.charCodeAt(i);
+    }
+    
+    return (h >>> 0).toString(36);
+  }
+  private makeClientId(row: InvoiceRow, fallbackIndex: number): string {
+    if (row.numero_factura && String(row.numero_factura).trim() !== '') {
+      return String(row.numero_factura);
+    }
+    const keyParts = [
+      row.prefijo ?? '',
+      row.nif_emision ?? '',
+      row.nif_receptor ?? '',
+      row.nombre_proveedor ?? '',
+      row.nombre_cliente ?? '',
+      row.fecha ?? '',
+      row.url ?? ''
+    ].join('|');
+    const hash = this.hashKey(keyParts);
+
+    return `tmp-${hash}-${fallbackIndex}`;
   }
 
   private isFilled(v: unknown) {
@@ -196,21 +223,40 @@ export class InvoiceManagerComponent implements OnInit {
     this.form.patchValue(partial, { emitEvent: false });
   }
 
-  private toUiItem(row: InvoiceRow, fallbackId: number | string): UiInvoiceItem {
+  private toUiItem(row: InvoiceRow, fallbackIndex: number | string): UiInvoiceItem {
+    const id = this.makeClientId(row, Number(fallbackIndex) || 0);
+
     const fileName =
-      row.numero_factura ? `${row.numero_factura}.pdf` : 'factura.pdf';
-    const status: 'ok' | 'fallido' =
-      row.valid ? 'ok' : 'fallido';
+      row.numero_factura?.toString().trim()
+        ? `${row.numero_factura}.pdf`
+        : (row.prefijo ? `${row.prefijo}.pdf` : 'factura.pdf');
+
+    const status: 'ok' | 'fallido' = row.valid ? 'ok' : 'fallido';
 
     return {
-      id: row.numero_factura ?? fallbackId,
+      id,                                        
       fileName,
       createdAt: row.fecha ?? new Date().toLocaleString(),
       status,
-      row,
+      row: { ...row },
     };
   }
 
+  async fetchAllInvoices(apiUrl: string, limit = '', search = ''): Promise<any[]> {
+    const url = `${apiUrl}/api/index.php?route=invoices${limit}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  }
+
+  async loadAll() {
+    try {
+      const rows = await this.fetchAllInvoices(this.apiUrl);
+      this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
+    } catch (e) {
+      console.error(e);
+    }
+  }
   open(inv: UiInvoiceItem) {
     this.router.navigate(['/facturas', inv.id]);
     document.body.style.overflow = 'hidden';
@@ -239,6 +285,6 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   pdfUrl() {
-    return this.selectedInvoice()?.row.url ?? null;
+    return this.selectedInvoice()?.row.url ?? '';
   }
 }
