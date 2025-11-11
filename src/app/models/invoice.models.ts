@@ -1,5 +1,5 @@
 export interface InvoiceRow {
-    numero_factura: string | null;
+numero_factura: string | null;
     nombre_cliente: string | null;
     nombre_proveedor: string | null;
     fecha: string | null;

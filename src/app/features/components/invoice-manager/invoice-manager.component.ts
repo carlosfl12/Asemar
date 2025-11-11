@@ -37,12 +37,16 @@ export class InvoiceManagerComponent implements OnInit {
   private readonly apiUrl = environment.apiUrl;
   lastNumDoc = signal<number | null>(null);
 
+  // HTML
+  showAll = signal(false);
+
   // Facturas
   invoices = signal<UiInvoiceItem[]>([]);
   correctInvoices = signal(0);
   totalInvoices = signal(0);
 
   selectedId = signal<string | null>(null);
+  selectedUserId = signal<string | null>(null);
   selectedInvoice = computed(() =>
     this.invoices().find(i => String(i.id) === (this.selectedId() ?? ''))
   );
@@ -87,7 +91,12 @@ export class InvoiceManagerComponent implements OnInit {
   constructor() {
     effect(() => {
       const id = this.route.snapshot.paramMap.get('id');
+      const userId = this.route.snapshot.paramMap.get('userId');
+      
+      // Ids
       this.selectedId.set(id);
+      this.selectedUserId.set(userId);
+
       const inv = this.selectedInvoice();
       if (inv) {
         this.form.reset({}, { emitEvent: false });
@@ -107,6 +116,9 @@ export class InvoiceManagerComponent implements OnInit {
   subscription!: Subscription;
 
   ngOnInit() {
+    const userId = this.route.snapshot.paramMap.get('userId');
+    this.selectedUserId.set(userId);
+
     this.loadAll();
     this.subscription = this.wsService.messages$.subscribe({
       next: (evt: any) => {
@@ -244,29 +256,34 @@ export class InvoiceManagerComponent implements OnInit {
     };
   }
 
-  async fetchAllInvoices(apiUrl: string, limit = '', search = ''): Promise<any[]> {
-    const url = `${apiUrl}/api/invoices`;
+  async fetchAllInvoices(apiUrl: string, opts: { userId?: string}): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (opts.userId) params.set('user_id', opts.userId);
+    const url = `${apiUrl}/api/invoices${params.toString() ? `?${params.toString()}` : ''}`;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }
 
   async loadAll() {
+    const userId = this.selectedUserId() ?? '0';
     try {
-      const rows = await this.fetchAllInvoices(this.apiUrl);
+      const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
       this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
     } catch (e) {
       console.error(e);
     }
   }
   open(inv: UiInvoiceItem) {
-    this.router.navigate(['/facturas', inv.id]);
+    const userId = this.selectedUserId() ?? '0';
+    this.router.navigate(['/', userId, 'facturas', inv.id]);
     document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
+    const userId = this.selectedUserId() ?? '0';
     document.body.style.overflow = '';
-    this.router.navigate(['/facturas']);
+    this.router.navigate(['/', userId ,'facturas']);
   }
 
   saveAndSend() {
@@ -333,7 +350,12 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   async loadCorrectInvoicesOnce() {
-    const url = `${this.apiUrl}/api/pages`;
+    const params = new URLSearchParams();
+    const userId = this.selectedUserId() ?? 0;
+
+    if (userId) params.set('user_id', userId);
+    const url = `${this.apiUrl}/api/pages${params.toString() ? `?${params.toString()}` : ''}`;
+    
     try{
       const res = await fetch(url, {headers: { 'Accept': 'application/json' }})
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
