@@ -14,9 +14,10 @@
 <main class="container">
     <!-- Lista -->
     <section class="list">
-        <div>
+        <div class="facts">
             <h2>Mis Facturas</h2>
-            <p>Facturas: </p>
+            <!-- <p>Facturas:  {{getCorrectInvoices()}} de {{getTotalInvoices()}}</p> -->
+            <p>Facturas: {{ correctInvoices()}} de 0</p>
         </div>
 
         <div class="card" *ngFor="let row of invoices()">
@@ -47,14 +48,6 @@
                 · Doc #{{ lastNumDoc() }}
             </small>
         </h3>
-
-        <div class="modal-actions" style="display:flex;gap:8px;align-items:center;">
-            <a *ngIf="pdfUrl()" [href]="pdfUrl()" target="_blank" rel="noopener" class="btn-outline"
-                style="text-decoration:none;">
-                Abrir PDF ↗
-            </a>
-            <button class="close" (click)="closeModal()">✕</button>
-        </div>
     </div>
 
 
@@ -71,11 +64,11 @@
         </div>
 
         <!-- Formulario ligado 1:1 a InvoiceRow -->
-        <form class="form" [formGroup]="form" (ngSubmit)="saveAndSend()">
+        <form class="form" [formGroup]="form" (ngSubmit)="saveDataAndSend()">
             <h4>Datos de la Factura</h4>
 
             <label> Número de Factura
-                <input formControlName="numero_factura" placeholder="Ej: F-2024-001">
+                <input formControlName="numero_factura">
             </label>
 
             <label> Fecha de Factura

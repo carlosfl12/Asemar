@@ -2,7 +2,6 @@ import { Component, computed, effect, inject, signal, OnInit } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { SafeUrlPipe } from '../../../shared/safe-url.pipe';
 import { InvoiceRow } from '../../../models/invoice.models';
 import { WebSocketService } from '../web-socket-service/web-socket-service.component';
 import { Subscription } from 'rxjs';
@@ -38,8 +37,10 @@ export class InvoiceManagerComponent implements OnInit {
   private readonly apiUrl = environment.apiUrl;
   lastNumDoc = signal<number | null>(null);
 
-  // TEST
+  // Facturas
   invoices = signal<UiInvoiceItem[]>([]);
+  correctInvoices = signal(0);
+  totalInvoices = signal(0);
 
   selectedId = signal<string | null>(null);
   selectedInvoice = computed(() =>
@@ -80,10 +81,10 @@ export class InvoiceManagerComponent implements OnInit {
 
     valid: this.fb.control<boolean>(false),
     url: this.fb.control<string | null>(null),
+    corregido: this.fb.control<number | null>(1)
   });
 
   constructor() {
-    // Sincroniza URL → modal + form
     effect(() => {
       const id = this.route.snapshot.paramMap.get('id');
       this.selectedId.set(id);
@@ -150,6 +151,7 @@ export class InvoiceManagerComponent implements OnInit {
       },
       error: err => console.error('WS error:', err),
     });
+    this.loadCorrectInvoicesOnce();
   }
 
   get resolvedSrc(): string {
@@ -243,7 +245,7 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   async fetchAllInvoices(apiUrl: string, limit = '', search = ''): Promise<any[]> {
-    const url = `${apiUrl}/api/index.php?route=invoices${limit}`;
+    const url = `${apiUrl}/api/invoices`;
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
@@ -280,8 +282,66 @@ export class InvoiceManagerComponent implements OnInit {
       list.map(x => (x.id === inv.id ? { ...x, row: { ...updated } } : x))
     );
 
+
     this.closeModal();
     location.reload();
+  }
+
+  async saveDataAndSend() {
+    const inv = this.selectedInvoice();
+    if (!inv) return;
+    const updated = this.form.getRawValue() as InvoiceRow;
+    try {
+      await fetch(`${this.apiUrl}/api/invoices`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          prefijo: updated.prefijo ?? null,
+          numero_factura: updated.numero_factura ?? null,
+          nombre_cliente: updated.nombre_cliente ?? null,
+          nombre_proveedor: updated.nombre_proveedor ?? null,
+          fecha: updated.fecha ?? null,
+          nif_emision: updated.nif_emision,
+          nif_receptor: updated.nif_receptor,
+          cif_lateral: updated.cif_lateral,
+          base1: updated.base1,
+          iva1: updated.iva1,
+          cuota1: updated.cuota1,
+          recargo1: updated.recargo1,
+          base2: updated.base2,
+          iva2: updated.iva2,
+          cuota2: updated.cuota2,
+          recargo2: updated.recargo2,
+          base3: updated.base3,
+          iva3: updated.iva3,
+          cuota3: updated.cuota3,
+          recargo3: updated.recargo3,
+          base_retencion: updated.base_retencion,
+          porcentaje_retencion: updated.porcentaje_retencion,
+          cuota_retencion: updated.cuota_retencion,
+          importe_total: updated.importe_total,
+          metodo_pago: updated.metodo_pago,
+          valid: updated.valid,
+          url: updated.url,
+          corregido: updated.corregido ?? 1,
+        })
+      })
+      this.closeModal();
+    } catch (err) {
+      console.error("Error al hacer el método PUT", err);
+    }
+  }
+
+  async loadCorrectInvoicesOnce() {
+    const url = `${this.apiUrl}/api/pages`;
+    try{
+      const res = await fetch(url, {headers: { 'Accept': 'application/json' }})
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const total = await res.json();
+      this.correctInvoices.set(Number(total) || 0);
+    } catch (err) {
+      console.error('Error cárgando facturas correctas: ', err);
+    }
   }
 
   pdfUrl() {

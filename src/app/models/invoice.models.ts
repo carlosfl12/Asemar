@@ -26,6 +26,7 @@ export interface InvoiceRow {
     prefijo: string | null;
     valid: boolean;
     url: string | null;
+    corregido: number | null;
 }
 
 export interface IncomingEnvelope {
