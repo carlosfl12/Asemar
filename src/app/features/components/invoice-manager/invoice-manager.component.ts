@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, effect, inject, signal, OnInit, viewChild, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -8,11 +8,13 @@ import { Subscription } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
+import { DynamicFields } from '../../../models/dynamic-fields.types';
+import { DynamicFieldResolverService } from '../../../shared/resolvers/dynamic-field-resolver.service';
+import { DomSanitizer, SafeResourceUrl  } from '@angular/platform-browser';
 
 interface RealTimeData {
   value: number;
   timestamp: number | string;
-  // otras propiedades...
 }
 type InvoiceStatus = 'fallido' | 'procesando' | 'ok';
 interface UiInvoiceItem {
@@ -31,11 +33,16 @@ interface UiInvoiceItem {
   styleUrls: ['./invoice-manager.component.scss'],
 })
 export class InvoiceManagerComponent implements OnInit {
+  @ViewChild ("visualizador") visualizador!: ElementRef;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
   private readonly apiUrl = environment.apiUrl;
+  private resolver = inject(DynamicFieldResolverService);
   lastNumDoc = signal<number | null>(null);
+  pdfUrl1!: SafeResourceUrl;
+
+  iframe: any;
 
   // HTML
   showAll = signal(false);
@@ -44,6 +51,10 @@ export class InvoiceManagerComponent implements OnInit {
   invoices = signal<UiInvoiceItem[]>([]);
   correctInvoices = signal(0);
   totalInvoices = signal(0);
+  tipo = signal<string | null>("");
+
+  // Códigos de error
+  fields: DynamicFields<keyof InvoiceRow>[] = [];
 
   selectedId = signal<string | null>(null);
   selectedUserId = signal<string | null>(null);
@@ -51,8 +62,10 @@ export class InvoiceManagerComponent implements OnInit {
     this.invoices().find(i => String(i.id) === (this.selectedId() ?? ''))
   );
 
+
   form = this.fb.nonNullable.group({
     numero_factura: this.fb.control<string | null>(null),
+    nombre_factura: this.fb.control<string | null>(null),
     nombre_cliente: this.fb.control<string | null>(null),
     nombre_proveedor: this.fb.control<string | null>(null),
     fecha: this.fb.control<string | null>(null),
@@ -78,17 +91,21 @@ export class InvoiceManagerComponent implements OnInit {
     base_retencion: this.fb.control<number | null>(null),
     porcentaje_retencion: this.fb.control<number | null>(null),
     cuota_retencion: this.fb.control<number | null>(null),
+    tipo: this.fb.control<string | null>(null),
 
     importe_total: this.fb.control<number | null>(0),
     metodo_pago: this.fb.control<string | null>(null),
     prefijo: this.fb.control<string | null>(null),
+    cuenta_contable: this.fb.control<number | null>(0),
+    num_apunte: this.fb.control<number | null>(0),
+    longitud: this.fb.control<string |null>(null),
 
     valid: this.fb.control<boolean>(false),
     url: this.fb.control<string | null>(null),
-    corregido: this.fb.control<number | null>(1)
+    corregido: this.fb.control<number | null>(1),
   });
 
-  constructor() {
+  constructor(private sanitizer: DomSanitizer) {
     effect(() => {
       const id = this.route.snapshot.paramMap.get('id');
       const userId = this.route.snapshot.paramMap.get('userId');
@@ -103,11 +120,6 @@ export class InvoiceManagerComponent implements OnInit {
         this.patchRowOnlyFilled(inv.row);
       }
     })
-  }
-
-  private getPayload(evt: any): InvoiceRow | InvoiceRow[] | null {
-    const p = evt?.data ?? evt?.value ?? evt ?? null;
-    return p;
   }
 
   wsService = inject(WebSocketService);
@@ -125,7 +137,9 @@ export class InvoiceManagerComponent implements OnInit {
         const payload = evt?.data ?? evt?.value ?? evt ?? null;
         const pdfUrl = evt?.url ?? payload?.url ?? null;
         const numDoc = evt?.num_doc ?? null;
-        console.log("DATA RECIBIDA: ", evt);
+        const tipo = evt?.tipo ?? null;
+        console.log("DATA: ", evt);
+        
 
         if (numDoc !== null && numDoc !== undefined) {
           this.lastNumDoc.set(Number(numDoc));
@@ -159,17 +173,14 @@ export class InvoiceManagerComponent implements OnInit {
           if (opened && String(opened.id) === String(item.id)) {
             this.patchRowOnlyFilled(item.row);
           }
+
+          this.totalInvoices.set(numDoc); 
         }
       },
       error: err => console.error('WS error:', err),
     });
-    this.loadCorrectInvoicesOnce();
-  }
-
-  get resolvedSrc(): string {
-    if (!this.pdfUrl() || typeof this.pdfUrl() !== 'string') return this.pdfUrl();
-    const m = this.pdfUrl().match(/https?:\/\/drive\.google\.com\/file\/d\/([^/]+)/);
-    return m?.[1] ? `https://drive.google.com/uc?export=download&id=${m[1]}` : this.pdfUrl();
+    this.loadTotalInvoices();
+    this.loadErrorCodes();
   }
 
   private hashKey(input: string): string {
@@ -270,6 +281,10 @@ export class InvoiceManagerComponent implements OnInit {
     try {
       const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
       this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
+
+      if(this.selectedId()) {
+        this.createIframe()
+      }
     } catch (e) {
       console.error(e);
     }
@@ -277,6 +292,7 @@ export class InvoiceManagerComponent implements OnInit {
   open(inv: UiInvoiceItem) {
     const userId = this.selectedUserId() ?? '0';
     this.router.navigate(['/', userId, 'facturas', inv.id]);
+    console.log(inv);
     document.body.style.overflow = 'hidden';
   }
 
@@ -294,7 +310,6 @@ export class InvoiceManagerComponent implements OnInit {
 
     updated.valid = !!updated.numero_factura && !!updated.nombre_proveedor && !!updated.importe_total;
 
-    // actualiza en memoria
     this.invoices.update(list =>
       list.map(x => (x.id === inv.id ? { ...x, row: { ...updated } } : x))
     );
@@ -308,11 +323,7 @@ export class InvoiceManagerComponent implements OnInit {
     const inv = this.selectedInvoice();
     if (!inv) return;
     const updated = this.form.getRawValue() as InvoiceRow;
-    try {
-      await fetch(`${this.apiUrl}/api/invoices`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
+    const options = {
           prefijo: updated.prefijo ?? null,
           numero_factura: updated.numero_factura ?? null,
           nombre_cliente: updated.nombre_cliente ?? null,
@@ -341,15 +352,41 @@ export class InvoiceManagerComponent implements OnInit {
           valid: updated.valid,
           url: updated.url,
           corregido: updated.corregido ?? 1,
-        })
+          cuenta_contable: updated.cuenta_contable,
+          tipo: updated.tipo,
+          longitud: updated.longitud,
+          nombre_factura: updated.nombre_factura,
+          num_apunte: updated.num_apunte,
+          cod_empresa: updated.cod_empresa,
+    }
+    try {
+      await fetch(`${this.apiUrl}/api/invoices`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(options)
       })
       this.closeModal();
     } catch (err) {
       console.error("Error al hacer el método PUT", err);
     }
+
+    this.sendData(options);
   }
 
-  async loadCorrectInvoicesOnce() {
+  toggleShowAll(): void {
+    this.showAll.update(v => !v);
+  }
+
+  async loadErrorCodes() {
+    const codes = [307, 301, 309, 310];
+
+    const labelOverride = {'307': 'Fecha de factura'};
+    this.fields = this.resolver.resolve(codes)
+
+    console.log('Campos resueltos:', this.fields);
+  }
+
+  async loadTotalInvoices() {
     const params = new URLSearchParams();
     const userId = this.selectedUserId() ?? 0;
 
@@ -360,13 +397,43 @@ export class InvoiceManagerComponent implements OnInit {
       const res = await fetch(url, {headers: { 'Accept': 'application/json' }})
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const total = await res.json();
-      this.correctInvoices.set(Number(total) || 0);
+      this.totalInvoices.set(Number(total) || 0);
     } catch (err) {
       console.error('Error cárgando facturas correctas: ', err);
     }
   }
 
+  async sendData(options: any) {
+    const params = options.tipo
+    const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php?tipo=${params}`;
+    
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+          data: options
+        })
+      })
+
+      if (!resp.ok) {
+        throw new Error(`Error HTTP: ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      console.log('Respuesta:', data);
+    } catch (err) {
+      console.log("Error", err);
+      throw err;
+    }
+  }
+
   pdfUrl() {
-    return this.selectedInvoice()?.row.url ?? '';
+    const url = `${this.selectedInvoice()?.row.url}/preview?access_token=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`
+    return url;
+  }
+
+  createIframe() {
+    const iframe = '<iframe src="'+ this.pdfUrl() +'"  width="640" height="480"></iframe>';
+    this.iframe = this.sanitizer.bypassSecurityTrustHtml( iframe);
   }
 }

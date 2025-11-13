@@ -480,11 +480,26 @@ h2 {
 .facts {
     display: flex;
     justify-content: space-between;
-    /* opcional, pero también sirve: */
     align-items: flex-start;
 }
 
 .facts h2,
 .facts p {
-    margin-bottom: 1.5em;        /* o el mismo margin que quieras para ambos */
+    margin-bottom: 1.5em;        
+}
+
+.toggle-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+}
+.toggle-btn:hover { background: #4676df; }
+.toggle-btn.active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
 }

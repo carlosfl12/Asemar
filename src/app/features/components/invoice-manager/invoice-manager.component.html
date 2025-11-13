@@ -16,8 +16,7 @@
     <section class="list">
         <div class="facts">
             <h2>Mis Facturas</h2>
-            <!-- <p>Facturas:  {{getCorrectInvoices()}} de {{getTotalInvoices()}}</p> -->
-            <p>Facturas: {{ correctInvoices()}} de 0</p>
+            <p>Facturas: 0 de {{ totalInvoices() }}</p>
         </div>
 
         <div class="card" *ngFor="let row of invoices()">
@@ -48,129 +47,171 @@
                 · Doc #{{ lastNumDoc() }}
             </small>
         </h3>
+        <div class="form-toggle" style="display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;">
+            <!-- <input type="checkbox"
+                    [checked]="showAll()"
+                    (change)="showAll.set($any($event.target).checked)" />
+            <label style="margin:0;">Mostrar todos</label> -->
+            <button class="toggle-btn"
+            (click)="toggleShowAll()"
+            [class.active]="showAll()"
+            [attr.aria-pressed]="showAll()"
+            [title]="showAll() ? 'Mostrando todos' : 'Mostrando fallidos'">
+            {{showAll() ? 'Mostrar fallidos' : 'Mostrar todos'}}
+            </button>
+        </div>
     </div>
-
 
     <div class="modal-body">
         <!-- PDF -->
-        <div class="pdf-pane">
-            <ngx-extended-pdf-viewer [src]="resolvedSrc" [height]="'100%'" [zoom]="'page-width'"
-                [showOpenFileButton]="false" [showSecondaryToolbarButton]="true">
-            </ngx-extended-pdf-viewer>
-
-            <!-- <iframe [src]="'https://pr99.esphera.ai/uploads/00_25003388.pdf'"></iframe> -->
-            <!-- <pdf-viewer [src]="'https://pr99.esphera.ai/uploads/00_25003388.pdf'" [render-text]="true"
-                [original-size]="false" ></pdf-viewer> -->
+        <div #visualizador class="pdf-pane" [innerHTML]="iframe" >
         </div>
 
         <!-- Formulario ligado 1:1 a InvoiceRow -->
         <form class="form" [formGroup]="form" (ngSubmit)="saveDataAndSend()">
-            <h4>Datos de la Factura</h4>
+              <ng-container *ngIf="!showAll(); else fullView">
+                <fieldset>
+                    <legend>Datos fallidos</legend>
+                    <ng-container *ngFor="let f of fields">
+                        <label [attr.for]="'fld-' + f.key">{{ f.label }}
+                            <input
+                            [id]="'fld-' + f.key"
+                            [type]="f.type"
+                            [step]="f.step || null"
+                            [formControlName]="f.control">
+                        </label>
+                    </ng-container>
+                </fieldset>
+            </ng-container>
+            <ng-template #fullView>
+                <h4>Datos de la Factura</h4>
 
-            <label> Número de Factura
-                <input formControlName="numero_factura">
-            </label>
 
-            <label> Fecha de Factura
-                <input type="date" formControlName="fecha" placeholder="dd/mm/aaaa">
-            </label>
+                <label> Número de Factura
+                    <input formControlName="numero_factura">
+                </label>
+                <label> Nombre de Factura
+                    <input formControlName="nombre_factura">
+                </label>
 
-            <label>Nombre Cliente
-                <input formControlName="nombre_cliente" placeholder="Nombre del cliente">
-            </label>
+                <label> Fecha de Factura
+                    <input type="date" formControlName="fecha" placeholder="dd/mm/aaaa">
+                </label>
 
-            <label> Nombre del Proveedor
-                <input formControlName="nombre_proveedor" placeholder="Nombre de la empresa">
-            </label>
+                <label> Código empresa
+                    <input type="number" formControlName="cod_empresa">
+                </label>
 
-            <label> NIF/CIF Proveedor (emisión)
-                <input formControlName="nif_emision">
-            </label>
+                <label>Nombre Cliente
+                    <input formControlName="nombre_cliente" placeholder="Nombre del cliente">
+                </label>
 
-            <label> NIF/CIF Receptor
-                <input formControlName="nif_receptor">
-            </label>
+                <label> Nombre del Proveedor
+                    <input formControlName="nombre_proveedor" placeholder="Nombre de la empresa">
+                </label>
 
-            <label>CIF lateral
-                <input formControlName="cif_lateral">
-            </label>
+                <label> NIF/CIF Proveedor (emisión)
+                    <input formControlName="nif_emision">
+                </label>
 
-            <label> Subtotal-1 (€) 
-                <input type="number" step="0.01" formControlName="base1">
-            </label>
+                <label> NIF/CIF Receptor
+                    <input formControlName="nif_receptor">
+                </label>
 
-            <label> IVA-1 (% o €)
-                <input type="number" step="0.01" formControlName="iva1">
-            </label>
+                <label>CIF lateral
+                    <input formControlName="cif_lateral">
+                </label>
 
-            <label> Cuota-1 (€)
-                <input type="number" step="0.01" formControlName="cuota1">
-            </label>
+                <label> Subtotal-1 (€) 
+                    <input type="number" step="0.01" formControlName="base1">
+                </label>
 
-            <label> Recargo-1 (€)
-                <input type="number" step="0.01" formControlName="recargo1">
-            </label>
+                <label> IVA-1 (% o €)
+                    <input type="number" step="0.01" formControlName="iva1">
+                </label>
 
-            <label> Subtotal-2 (€)
-                <input type="number" step="0.01" formControlName="base2">
-            </label>
+                <label> Cuota-1 (€)
+                    <input type="number" step="0.01" formControlName="cuota1">
+                </label>
 
-            <label> IVA-2 (% o €)
-                <input type="number" step="0.01" formControlName="iva2">
-            </label>
+                <label> Recargo-1 (€)
+                    <input type="number" step="0.01" formControlName="recargo1">
+                </label>
 
-            <label> Cuota-2 (€)
-                <input type="number" step="0.01" formControlName="cuota2">
-            </label>
+                <label> Subtotal-2 (€)
+                    <input type="number" step="0.01" formControlName="base2">
+                </label>
 
-            <label> Recargo-2 (€)
-                <input type="number" step="0.01" formControlName="recargo2">
-            </label>
+                <label> IVA-2 (% o €)
+                    <input type="number" step="0.01" formControlName="iva2">
+                </label>
 
-            <label> Subtotal-3 (€)
-                <input type="number" step="0.01" formControlName="base3">
-            </label>
+                <label> Cuota-2 (€)
+                    <input type="number" step="0.01" formControlName="cuota2">
+                </label>
 
-            <label> IVA-3 (% o €)
-                <input type="number" step="0.01" formControlName="iva3">
-            </label>
+                <label> Recargo-2 (€)
+                    <input type="number" step="0.01" formControlName="recargo2">
+                </label>
 
-            <label> Cuota-3 (€)
-                <input type="number" step="0.01" formControlName="cuota3">
-            </label>
+                <label> Subtotal-3 (€)
+                    <input type="number" step="0.01" formControlName="base3">
+                </label>
 
-            <label> Recargo-3 (€)
-                <input type="number" step="0.01" formControlName="recargo3">
-            </label>
-            
-            <label> Base retención
-                <input type="number" step="0.01" formControlName=base_retencion>
-            </label>
+                <label> IVA-3 (% o €)
+                    <input type="number" step="0.01" formControlName="iva3">
+                </label>
 
-            <label> % Retención
-                <input type="number" step="1" formControlName="porcentaje_retencion">
-            </label>
+                <label> Cuota-3 (€)
+                    <input type="number" step="0.01" formControlName="cuota3">
+                </label>
 
-            <label> Cuota Retención
-                <input type="number" step="1" formControlName="cuota_retencion">
-            </label>
+                <label> Recargo-3 (€)
+                    <input type="number" step="0.01" formControlName="recargo3">
+                </label>
+                
+                <label> Base retención
+                    <input type="number" step="0.01" formControlName=base_retencion>
+                </label>
 
-            <label> Importe Total (€)
-                <input type="number" step="0.01" formControlName="importe_total">
-            </label>
+                <label> % Retención
+                    <input type="number" step="1" formControlName="porcentaje_retencion">
+                </label>
 
-            <!-- Campos adicionales útiles -->
-            <label> Método de pago
-                <input formControlName="metodo_pago" placeholder="Transferencia, tarjeta…">
-            </label>
+                <label> Cuota Retención
+                    <input type="number" step="1" formControlName="cuota_retencion">
+                </label>
+                <label> Tipo de Factura
+                    <input formControlName="tipo">
+                </label>
 
-            <label> Prefijo
-                <input formControlName="prefijo" placeholder="Ej: F-2024">
-            </label>
+                <label> Importe Total (€)
+                    <input type="number" step="0.01" formControlName="importe_total">
+                </label>
 
-            <label> Link PDF
-                <input formControlName="url">
-            </label>
+                <!-- Campos adicionales útiles -->
+                <label> Método de pago
+                    <input formControlName="metodo_pago" placeholder="Transferencia, tarjeta…">
+                </label>
+
+                <label> Prefijo
+                    <input formControlName="prefijo" placeholder="Ej: F-2024">
+                </label>
+
+                <label> Link PDF
+                    <input formControlName="url">
+                </label>
+                <label> Cuenta contable
+                    <input type="number" formControlName="cuenta_contable">
+                </label>
+                <label> Número apunte
+                    <input formControlName="num_apunte">
+                </label>
+                <label> Longitud
+                    <input formControlName="longitud">
+                </label>
+            </ng-template>
+
             <!-- Ocultos en UI pero parte del modelo -->
             <input type="hidden" formControlName="url">
             <input type="hidden" formControlName="valid">

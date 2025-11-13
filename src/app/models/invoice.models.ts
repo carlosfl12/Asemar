@@ -22,11 +22,17 @@ numero_factura: string | null;
     porcentaje_retencion: number | null;
     cuota_retencion: number | null;
     importe_total: number | null;
+    cuenta_contable: number | null;
+    num_apunte: number | null;
+    nombre_factura: string | null;
     metodo_pago: string | null;
     prefijo: string | null;
     valid: boolean;
     url: string | null;
     corregido: number | null;
+    longitud: string | null;
+    tipo: string | null;
+    cod_empresa: string |null;
 }
 
 export interface IncomingEnvelope {
