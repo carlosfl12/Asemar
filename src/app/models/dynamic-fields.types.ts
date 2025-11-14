@@ -6,4 +6,5 @@ export interface DynamicFields<TKey extends keyof InvoiceRow = keyof InvoiceRow>
     control: TKey;
     type: FieldType;
     step?: string;
+    placeholder?: string;
 }

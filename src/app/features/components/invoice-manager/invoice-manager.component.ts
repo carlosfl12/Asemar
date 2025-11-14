@@ -11,6 +11,7 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { DynamicFields } from '../../../models/dynamic-fields.types';
 import { DynamicFieldResolverService } from '../../../shared/resolvers/dynamic-field-resolver.service';
 import { DomSanitizer, SafeResourceUrl  } from '@angular/platform-browser';
+import { CounterService } from '../../../core/stores/counter.service';
 
 interface RealTimeData {
   value: number;
@@ -49,12 +50,13 @@ export class InvoiceManagerComponent implements OnInit {
 
   // Facturas
   invoices = signal<UiInvoiceItem[]>([]);
-  correctInvoices = signal(0);
-  totalInvoices = signal(0);
+  get correctInvoices() { return this.counters.correctInvoices }
+  get totalInvoices() { return this.counters.totalInvoices };
   tipo = signal<string | null>("");
 
   // Códigos de error
   fields: DynamicFields<keyof InvoiceRow>[] = [];
+  errorCode = signal("");
 
   selectedId = signal<string | null>(null);
   selectedUserId = signal<string | null>(null);
@@ -69,6 +71,7 @@ export class InvoiceManagerComponent implements OnInit {
     nombre_cliente: this.fb.control<string | null>(null),
     nombre_proveedor: this.fb.control<string | null>(null),
     fecha: this.fb.control<string | null>(null),
+    codigo_empresa: this.fb.control<number | null>(null),
     nif_emision: this.fb.control<string | null>(null),
     nif_receptor: this.fb.control<string | null>(null),
     cif_lateral: this.fb.control<string | null>(null),
@@ -105,10 +108,14 @@ export class InvoiceManagerComponent implements OnInit {
     corregido: this.fb.control<number | null>(1),
   });
 
-  constructor(private sanitizer: DomSanitizer) {
+  constructor(private sanitizer: DomSanitizer, private counters: CounterService) {
     effect(() => {
       const id = this.route.snapshot.paramMap.get('id');
       const userId = this.route.snapshot.paramMap.get('userId');
+      const row = this.selectedInvoice();
+      if (row?.row?.error_code) {
+        this.loadErrorCodes(row.row.error_code);
+      }
       
       // Ids
       this.selectedId.set(id);
@@ -137,13 +144,10 @@ export class InvoiceManagerComponent implements OnInit {
         const payload = evt?.data ?? evt?.value ?? evt ?? null;
         const pdfUrl = evt?.url ?? payload?.url ?? null;
         const numDoc = evt?.num_doc ?? null;
-        const tipo = evt?.tipo ?? null;
+        const codeError = evt?.code_error ?? '';
+        this.lastNumDoc.set(numDoc);
+        this.errorCode.set(codeError);
         console.log("DATA: ", evt);
-        
-
-        if (numDoc !== null && numDoc !== undefined) {
-          this.lastNumDoc.set(Number(numDoc));
-        }
 
         if (!payload) return;
 
@@ -180,8 +184,9 @@ export class InvoiceManagerComponent implements OnInit {
       error: err => console.error('WS error:', err),
     });
     this.loadTotalInvoices();
-    this.loadErrorCodes();
+    // this.loadErrorCodes('308');
   }
+
 
   private hashKey(input: string): string {
     let h = 5381;
@@ -281,7 +286,6 @@ export class InvoiceManagerComponent implements OnInit {
     try {
       const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
       this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
-
       if(this.selectedId()) {
         this.createIframe()
       }
@@ -292,7 +296,8 @@ export class InvoiceManagerComponent implements OnInit {
   open(inv: UiInvoiceItem) {
     const userId = this.selectedUserId() ?? '0';
     this.router.navigate(['/', userId, 'facturas', inv.id]);
-    console.log(inv);
+
+    this.loadErrorCodes(inv.row.error_code);
     document.body.style.overflow = 'hidden';
   }
 
@@ -300,23 +305,6 @@ export class InvoiceManagerComponent implements OnInit {
     const userId = this.selectedUserId() ?? '0';
     document.body.style.overflow = '';
     this.router.navigate(['/', userId ,'facturas']);
-  }
-
-  saveAndSend() {
-    const inv = this.selectedInvoice();
-    if (!inv) return;
-
-    const updated = this.form.getRawValue() as InvoiceRow;
-
-    updated.valid = !!updated.numero_factura && !!updated.nombre_proveedor && !!updated.importe_total;
-
-    this.invoices.update(list =>
-      list.map(x => (x.id === inv.id ? { ...x, row: { ...updated } } : x))
-    );
-
-
-    this.closeModal();
-    location.reload();
   }
 
   async saveDataAndSend() {
@@ -357,18 +345,19 @@ export class InvoiceManagerComponent implements OnInit {
           longitud: updated.longitud,
           nombre_factura: updated.nombre_factura,
           num_apunte: updated.num_apunte,
-          cod_empresa: updated.cod_empresa,
+          codigo_empresa: updated.codigo_empresa
     }
-    try {
-      await fetch(`${this.apiUrl}/api/invoices`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(options)
-      })
-      this.closeModal();
-    } catch (err) {
-      console.error("Error al hacer el método PUT", err);
-    }
+
+    // try {
+    //   await fetch(`${this.apiUrl}/api/invoices`, {
+    //     method: 'PUT',
+    //     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    //     body: JSON.stringify(options)
+    //   })
+    //   this.closeModal();
+    // } catch (err) {
+    //   console.error("Error al hacer el método PUT", err);
+    // }
 
     this.sendData(options);
   }
@@ -377,13 +366,10 @@ export class InvoiceManagerComponent implements OnInit {
     this.showAll.update(v => !v);
   }
 
-  async loadErrorCodes() {
-    const codes = [307, 301, 309, 310];
+  async loadErrorCodes(errorCode = '') {
+    const codes = [errorCode];
 
-    const labelOverride = {'307': 'Fecha de factura'};
     this.fields = this.resolver.resolve(codes)
-
-    console.log('Campos resueltos:', this.fields);
   }
 
   async loadTotalInvoices() {
@@ -404,12 +390,23 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   async sendData(options: any) {
-    const params = options.tipo
-    const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php?tipo=${params}`;
+    const userId = this.route.snapshot.paramMap.get('userId') ?? '';
+    const inv = this.selectedInvoice();
+    const total = Number(this.totalInvoices() ?? 0);
+    const qs = new URLSearchParams({
+      timestamp: '',
+      file: options.nombre_factura,
+      tipo: options.tipo,
+      totalFiles: String(total),
+      userId: userId,
+    })
+
+    const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php?${qs.toString()}`;
     
     try {
       const resp = await fetch(url, {
         method: 'POST',
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           data: options
         })
@@ -420,7 +417,7 @@ export class InvoiceManagerComponent implements OnInit {
       }
 
       const data = await resp.json();
-      console.log('Respuesta:', data);
+      this.counters.setCorrect(data?.currentCount);
     } catch (err) {
       console.log("Error", err);
       throw err;

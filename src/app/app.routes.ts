@@ -13,6 +13,7 @@ export const routes: Routes = [
     { path: ':userId/facturas/:id', loadComponent: () => import('./features/components/invoice-manager/invoice-manager.component').then(m => m.InvoiceManagerComponent) },
     { path: 'notify/:id', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
     { path: 'notify', loadComponent: () => import('./features/components/sse/sse.component').then(m => m.SseComponent) },
+    { path: 'secciones', loadComponent: () => import('./features/secciones/secciones.component').then(m => m.SeccionesComponent)}
 
     // { path: '**', redirectTo: 'transfer' },
 ];

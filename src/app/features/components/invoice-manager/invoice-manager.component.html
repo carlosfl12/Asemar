@@ -16,7 +16,7 @@
     <section class="list">
         <div class="facts">
             <h2>Mis Facturas</h2>
-            <p>Facturas: 0 de {{ totalInvoices() }}</p>
+            <p>Facturas: {{ correctInvoices() }} de {{ totalInvoices() }}</p>
         </div>
 
         <div class="card" *ngFor="let row of invoices()">
@@ -48,10 +48,6 @@
             </small>
         </h3>
         <div class="form-toggle" style="display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;">
-            <!-- <input type="checkbox"
-                    [checked]="showAll()"
-                    (change)="showAll.set($any($event.target).checked)" />
-            <label style="margin:0;">Mostrar todos</label> -->
             <button class="toggle-btn"
             (click)="toggleShowAll()"
             [class.active]="showAll()"
@@ -78,7 +74,8 @@
                             [id]="'fld-' + f.key"
                             [type]="f.type"
                             [step]="f.step || null"
-                            [formControlName]="f.control">
+                            [formControlName]="f.control"
+                            [attr.placeholder]="f.placeholder || null">
                         </label>
                     </ng-container>
                 </fieldset>
@@ -182,7 +179,7 @@
                     <input type="number" step="1" formControlName="cuota_retencion">
                 </label>
                 <label> Tipo de Factura
-                    <input formControlName="tipo">
+                    <input formControlName="tipo" placeholder="Compras o Ventas">
                 </label>
 
                 <label> Importe Total (€)
@@ -196,19 +193,6 @@
 
                 <label> Prefijo
                     <input formControlName="prefijo" placeholder="Ej: F-2024">
-                </label>
-
-                <label> Link PDF
-                    <input formControlName="url">
-                </label>
-                <label> Cuenta contable
-                    <input type="number" formControlName="cuenta_contable">
-                </label>
-                <label> Número apunte
-                    <input formControlName="num_apunte">
-                </label>
-                <label> Longitud
-                    <input formControlName="longitud">
                 </label>
             </ng-template>
 

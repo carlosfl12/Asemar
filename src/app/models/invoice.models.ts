@@ -32,7 +32,8 @@ numero_factura: string | null;
     corregido: number | null;
     longitud: string | null;
     tipo: string | null;
-    cod_empresa: string |null;
+    codigo_empresa: string |null;
+    error_code: string;
 }
 
 export interface IncomingEnvelope {
