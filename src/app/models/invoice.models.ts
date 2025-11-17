@@ -32,8 +32,10 @@ numero_factura: string | null;
     corregido: number | null;
     longitud: string | null;
     tipo: string | null;
-    codigo_empresa: string |null;
+    cod_empresa: string |null;
     error_code: string;
+    id_doc_drive: string;
+    code_error?: string | null;
 }
 
 export interface IncomingEnvelope {

@@ -12,17 +12,16 @@ import { DynamicFields } from '../../../models/dynamic-fields.types';
 import { DynamicFieldResolverService } from '../../../shared/resolvers/dynamic-field-resolver.service';
 import { DomSanitizer, SafeResourceUrl  } from '@angular/platform-browser';
 import { CounterService } from '../../../core/stores/counter.service';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 interface RealTimeData {
   value: number;
   timestamp: number | string;
 }
-type InvoiceStatus = 'fallido' | 'procesando' | 'ok';
 interface UiInvoiceItem {
   id: number | string;
   fileName: string;
   createdAt: string;
-  status: InvoiceStatus;
   row: InvoiceRow;
 }
 
@@ -40,6 +39,11 @@ export class InvoiceManagerComponent implements OnInit {
   private fb = inject(FormBuilder);
   private readonly apiUrl = environment.apiUrl;
   private resolver = inject(DynamicFieldResolverService);
+  private paramMapSig = toSignal(this.route.paramMap, {
+    initialValue: this.route.snapshot.paramMap,
+  });
+  private lastPatchedId = signal<string | null>(null);
+
   lastNumDoc = signal<number | null>(null);
   pdfUrl1!: SafeResourceUrl;
 
@@ -60,9 +64,7 @@ export class InvoiceManagerComponent implements OnInit {
 
   selectedId = signal<string | null>(null);
   selectedUserId = signal<string | null>(null);
-  selectedInvoice = computed(() =>
-    this.invoices().find(i => String(i.id) === (this.selectedId() ?? ''))
-  );
+  selectedInvoice = signal<UiInvoiceItem | null>(null);
 
 
   form = this.fb.nonNullable.group({
@@ -71,7 +73,7 @@ export class InvoiceManagerComponent implements OnInit {
     nombre_cliente: this.fb.control<string | null>(null),
     nombre_proveedor: this.fb.control<string | null>(null),
     fecha: this.fb.control<string | null>(null),
-    codigo_empresa: this.fb.control<number | null>(null),
+    cod_empresa: this.fb.control<number | null>(null),
     nif_emision: this.fb.control<string | null>(null),
     nif_receptor: this.fb.control<string | null>(null),
     cif_lateral: this.fb.control<string | null>(null),
@@ -110,21 +112,51 @@ export class InvoiceManagerComponent implements OnInit {
 
   constructor(private sanitizer: DomSanitizer, private counters: CounterService) {
     effect(() => {
-      const id = this.route.snapshot.paramMap.get('id');
-      const userId = this.route.snapshot.paramMap.get('userId');
+      const params = this.paramMapSig();
+      const id = params.get('id');
+      const userId = params.get('userId');
       const row = this.selectedInvoice();
+
+      this.selectedId.set(id ?? null);
+      this.selectedUserId.set(userId ?? null);
+
+      if (!id) {
+        this.selectedInvoice.set(null);
+        return;
+      }
+
+      const list = this.invoices();
+      const found = list.find(x => String(x.row?.id_doc_drive) === id) ?? null;
+
+      if (found && this.selectedInvoice() !== found) {
+        this.selectedInvoice.set(found);
+      }
+
+      const current = this.selectedInvoice();
+
+      if (current) {
+        console.log('[selectedInvoice]', current);
+      }
+
+      const codeUnknown = 
+      (current?.row as any)?.error_code ??
+      (current?.row as any)?.code_error ??
+      null;
+
+      console.log('code/error_code recibido', codeUnknown);
+
+      if (codeUnknown !==  null && codeUnknown !== undefined) {
+        this.loadErrorCodes(String(codeUnknown));
+      }
+
       if (row?.row?.error_code) {
         this.loadErrorCodes(row.row.error_code);
       }
-      
-      // Ids
-      this.selectedId.set(id);
-      this.selectedUserId.set(userId);
 
-      const inv = this.selectedInvoice();
-      if (inv) {
-        this.form.reset({}, { emitEvent: false });
-        this.patchRowOnlyFilled(inv.row);
+      if (current && this.lastPatchedId() !== String(current.id)) {
+        this.form.reset({}, { emitEvent: false});
+        this.patchRowOnlyFilled(current.row);
+        this.lastPatchedId.set(String(current.id));
       }
     })
   }
@@ -141,13 +173,43 @@ export class InvoiceManagerComponent implements OnInit {
     this.loadAll();
     this.subscription = this.wsService.messages$.subscribe({
       next: (evt: any) => {
-        const payload = evt?.data ?? evt?.value ?? evt ?? null;
+        let payload = evt?.data ?? evt?.value ?? evt ?? null;
         const pdfUrl = evt?.url ?? payload?.url ?? null;
         const numDoc = evt?.num_doc ?? null;
         const codeError = evt?.code_error ?? '';
+        const idDocDrive = evt?.id_doc_drive ?? '';
+        const tipo = evt?.tipo ?? '';
+        const nombreFactura = evt?.nombre_factura ?? '';
         this.lastNumDoc.set(numDoc);
         this.errorCode.set(codeError);
-        console.log("DATA: ", evt);
+        // console.log("EVT:", evt);
+        // console.log("DATA: ", evt.data);
+
+        if (Array.isArray(payload)) {
+          payload = payload.map((row: any) => ({
+            ...row,
+            url: pdfUrl,
+            num_doc: numDoc,
+            code_error: codeError,
+            id_doc_drive: idDocDrive,
+            tipo: tipo
+          }));
+        } else if (payload && typeof payload === 'object'){
+          payload =  {
+            ...(payload as any),
+            url: pdfUrl,
+            num_doc: numDoc,
+            code_error: codeError,
+            id_doc_drive: idDocDrive,
+            tipo: tipo,
+            nombre_factura: nombreFactura
+          };
+        }
+        const item = payload as InvoiceRow
+        const data = this.toUiItem(item, this.invoices().length + 1);
+        
+        this.upsertInvoice(data);
+        console.log("PAYLOAD:", data);
 
         if (!payload) return;
 
@@ -167,7 +229,7 @@ export class InvoiceManagerComponent implements OnInit {
             const ix = list.findIndex(x => String(x.id) === String(item.id));
             if (ix >= 0) {
               const copy = [...list];
-              copy[ix] = { ...copy[ix], row: item.row, fileName: item.fileName, status: item.status };
+              copy[ix] = { ...copy[ix], row: item.row, fileName: item.fileName };
               return copy;
             }
             return [item, ...list];
@@ -185,33 +247,6 @@ export class InvoiceManagerComponent implements OnInit {
     });
     this.loadTotalInvoices();
     // this.loadErrorCodes('308');
-  }
-
-
-  private hashKey(input: string): string {
-    let h = 5381;
-    for (let i = 0; i < input.length; i++) {
-      h = ((h << 5) + h) + input.charCodeAt(i);
-    }
-    
-    return (h >>> 0).toString(36);
-  }
-  private makeClientId(row: InvoiceRow, fallbackIndex: number): string {
-    if (row.numero_factura && String(row.numero_factura).trim() !== '') {
-      return String(row.numero_factura);
-    }
-    const keyParts = [
-      row.prefijo ?? '',
-      row.nif_emision ?? '',
-      row.nif_receptor ?? '',
-      row.nombre_proveedor ?? '',
-      row.nombre_cliente ?? '',
-      row.fecha ?? '',
-      row.url ?? ''
-    ].join('|');
-    const hash = this.hashKey(keyParts);
-
-    return `tmp-${hash}-${fallbackIndex}`;
   }
 
   private isFilled(v: unknown) {
@@ -254,20 +289,13 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   private toUiItem(row: InvoiceRow, fallbackIndex: number | string): UiInvoiceItem {
-    const id = this.makeClientId(row, Number(fallbackIndex) || 0);
+    const id = row.id_doc_drive;
 
-    const fileName =
-      row.numero_factura?.toString().trim()
-        ? `${row.numero_factura}.pdf`
-        : (row.prefijo ? `${row.prefijo}.pdf` : 'factura.pdf');
-
-    const status: 'ok' | 'fallido' = row.valid ? 'ok' : 'fallido';
-
+    const fileName = row.nombre_factura ?? row.id_doc_drive;
     return {
       id,                                        
       fileName,
       createdAt: row.fecha ?? new Date().toLocaleString(),
-      status,
       row: { ...row },
     };
   }
@@ -286,6 +314,7 @@ export class InvoiceManagerComponent implements OnInit {
     try {
       const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
       this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
+      console.log(this.invoices());
       if(this.selectedId()) {
         this.createIframe()
       }
@@ -295,9 +324,9 @@ export class InvoiceManagerComponent implements OnInit {
   }
   open(inv: UiInvoiceItem) {
     const userId = this.selectedUserId() ?? '0';
-    this.router.navigate(['/', userId, 'facturas', inv.id]);
-
-    this.loadErrorCodes(inv.row.error_code);
+    this.router.navigate(['/', userId, 'facturas', inv.row.id_doc_drive]).then(() => {
+      if (inv.row.error_code) this.loadErrorCodes(inv.row.error_code);
+    });
     document.body.style.overflow = 'hidden';
   }
 
@@ -345,19 +374,20 @@ export class InvoiceManagerComponent implements OnInit {
           longitud: updated.longitud,
           nombre_factura: updated.nombre_factura,
           num_apunte: updated.num_apunte,
-          codigo_empresa: updated.codigo_empresa
+          codigo_empresa: updated.cod_empresa,
+          id_doc_drive: inv.row.id_doc_drive
     }
 
-    // try {
-    //   await fetch(`${this.apiUrl}/api/invoices`, {
-    //     method: 'PUT',
-    //     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    //     body: JSON.stringify(options)
-    //   })
-    //   this.closeModal();
-    // } catch (err) {
-    //   console.error("Error al hacer el método PUT", err);
-    // }
+    try {
+      await fetch(`${this.apiUrl}/api/invoices`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(options)
+      })
+      this.closeModal();
+    } catch (err) {
+      console.error("Error al hacer el método PUT", err);
+    }
 
     this.sendData(options);
   }
@@ -423,6 +453,42 @@ export class InvoiceManagerComponent implements OnInit {
       throw err;
     }
   }
+
+  private upsertInvoice(next: UiInvoiceItem): void {
+    const r: any = next.row;
+    const normalizedId =
+      r?.id_doc_drive && String(r.id_doc_drive).trim() !== ''
+        ? String(r.id_doc_drive)
+        : String(next.id ?? r?.numero_factura ?? r?.prefijo ?? Date.now());
+
+    const normalizedFileName =
+      r?.nombre_archivo && String(r.nombre_archivo).trim() !== ''
+        ? String(r.nombre_archivo)
+        : next.fileName;
+
+    const normalized: UiInvoiceItem = {
+      ...next,
+      id: normalizedId,
+      fileName: normalizedFileName,
+    };
+
+    this.invoices.update(list => {
+      const ix = list.findIndex(x => String(x.id) === String(normalized.id));
+      if (ix >= 0) {
+        const copy = [...list];
+        copy[ix] = { ...copy[ix], ...normalized, row: normalized.row };
+        return copy;
+      }
+      return [normalized, ...list];
+    });
+
+    const opened = this.selectedInvoice();
+    if (opened && String(opened.id) === String(normalized.id)) {
+      this.selectedInvoice.set({ ...opened, ...normalized, row: normalized.row });
+      this.patchRowOnlyFilled?.(normalized.row);
+    }
+  }
+
 
   pdfUrl() {
     const url = `${this.selectedInvoice()?.row.url}/preview?access_token=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`

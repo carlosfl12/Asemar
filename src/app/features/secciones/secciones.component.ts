@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 type ClientSummary = {
-  id: string | number;
-  nombre: string;
-  pendientes: number;
+  id_user: string | number;
+  username: string;
+  pending: number;
 }
 
 @Component({
@@ -15,6 +16,7 @@ type ClientSummary = {
   styleUrl: './secciones.component.scss'
 })
 export class SeccionesComponent implements OnInit{
+  private readonly apiUrl = environment.apiUrl;
   router = inject(Router);
   clientes = signal<ClientSummary[]>([]);
   error = signal<string | null>(null);
@@ -23,20 +25,26 @@ export class SeccionesComponent implements OnInit{
   ngOnInit(): void {
     this.error.set(null);
     try {
-      const data: ClientSummary[] = [
-        {id: 101, nombre: "El pepe", pendientes: 3},
-        {id: 1, nombre: "esphera", pendientes: 1},
-        {id: 2, nombre: "asemar", pendientes: 2},
-        {id: 3, nombre: "test sin pendientes", pendientes: 0}
-      ]
-      this.clientes.set(data ?? []);
+      this.loadPendingInvoices();
     } catch (e: any) {
       console.error(e);
       this.error.set('No se pudieron cargar los clientes.');
     }
   } 
   openClient(c: ClientSummary) {
-    // opción 1: array de segmentos (absoluto)
-    this.router.navigate(['/', c.id, 'facturas']);
+    console.log(c);
+    this.router.navigate(['/', c.id_user, 'facturas']);
+  }
+
+  async loadPendingInvoices() {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/count`, { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      this.clientes.set(data);
+      return data;
+    } catch (err) {
+      console.error("Error", err);
+    }
   }
 }

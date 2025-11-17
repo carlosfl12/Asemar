@@ -12,13 +12,13 @@
       (click)="openClient(c)"
       tabindex="0"
       role="button"
-      [attr.aria-label]="'Abrir facturas de ' + c.nombre">
+      [attr.aria-label]="'Abrir facturas de ' + c.username">
 
-      <div class="card__title">{{ c.nombre }}</div>
+      <div class="card__title">{{ c.username }}</div>
 
-      <div class="card__status" [class.ok]="c.pendientes === 0" [class.warn]="c.pendientes > 0">
-        <ng-container *ngIf="c.pendientes > 0; else okTpl">
-          {{ c.pendientes }} factura{{ c.pendientes === 1 ? '' : 's' }} por corregir
+      <div class="card__status" [class.ok]="c.pending === 0" [class.warn]="c.pending > 0">
+        <ng-container *ngIf="c.pending > 0; else okTpl">
+          {{ c.pending }} factura{{ c.pending === 1 ? '' : 's' }} por corregir
         </ng-container>
         <ng-template #okTpl>Sin facturas por corregir</ng-template>
       </div>
