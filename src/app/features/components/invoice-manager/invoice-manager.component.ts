@@ -138,6 +138,10 @@ export class InvoiceManagerComponent implements OnInit {
         console.log('[selectedInvoice]', current);
       }
 
+      if (current?.row.url) {
+        this.createIframe();
+      }
+
       const codeUnknown = 
       (current?.row as any)?.error_code ??
       (current?.row as any)?.code_error ??
@@ -490,10 +494,18 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
 
-  pdfUrl() {
-    const url = `${this.selectedInvoice()?.row.url}/preview?access_token=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`
-    return url;
-  }
+pdfUrl() {
+  const raw = this.selectedInvoice()?.row?.url || '';   // nunca undefined
+  if (!raw) return '';                                   // nada que previsualizar
+
+  // Si es enlace de Google Drive en formato "file/d/<id>", conviértelo a /preview
+  const m = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+  const base = m ? `https://drive.google.com/file/d/${m[1]}/preview` : raw;
+
+  // Añade el token respetando si ya hay querystring
+  const url = `${base}${base.includes('?') ? '&' : '?'}access_token=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`;
+  return url;
+}
 
   createIframe() {
     const iframe = '<iframe src="'+ this.pdfUrl() +'"  width="640" height="480"></iframe>';
