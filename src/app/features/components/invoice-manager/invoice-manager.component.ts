@@ -134,10 +134,6 @@ export class InvoiceManagerComponent implements OnInit {
 
       const current = this.selectedInvoice();
 
-      if (current) {
-        console.log('[selectedInvoice]', current);
-      }
-
       if (current?.row.url) {
         this.createIframe();
       }
@@ -146,8 +142,6 @@ export class InvoiceManagerComponent implements OnInit {
       (current?.row as any)?.error_code ??
       (current?.row as any)?.code_error ??
       null;
-
-      console.log('code/error_code recibido', codeUnknown);
 
       if (codeUnknown !==  null && codeUnknown !== undefined) {
         this.loadErrorCodes(String(codeUnknown));
@@ -186,8 +180,6 @@ export class InvoiceManagerComponent implements OnInit {
         const nombreFactura = evt?.nombre_factura ?? '';
         this.lastNumDoc.set(numDoc);
         this.errorCode.set(codeError);
-        // console.log("EVT:", evt);
-        // console.log("DATA: ", evt.data);
 
         if (Array.isArray(payload)) {
           payload = payload.map((row: any) => ({
@@ -213,7 +205,6 @@ export class InvoiceManagerComponent implements OnInit {
         const data = this.toUiItem(item, this.invoices().length + 1);
         
         this.upsertInvoice(data);
-        console.log("PAYLOAD:", data);
 
         if (!payload) return;
 
@@ -318,7 +309,6 @@ export class InvoiceManagerComponent implements OnInit {
     try {
       const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
       this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
-      console.log(this.invoices());
       if(this.selectedId()) {
         this.createIframe()
       }
@@ -453,7 +443,7 @@ export class InvoiceManagerComponent implements OnInit {
       const data = await resp.json();
       this.counters.setCorrect(data?.currentCount);
     } catch (err) {
-      console.log("Error", err);
+      console.error("Error", err);
       throw err;
     }
   }
@@ -495,14 +485,12 @@ export class InvoiceManagerComponent implements OnInit {
 
 
 pdfUrl() {
-  const raw = this.selectedInvoice()?.row?.url || '';   // nunca undefined
-  if (!raw) return '';                                   // nada que previsualizar
+  const raw = this.selectedInvoice()?.row?.url || '';
+  if (!raw) return '';                                   
 
-  // Si es enlace de Google Drive en formato "file/d/<id>", conviértelo a /preview
   const m = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
   const base = m ? `https://drive.google.com/file/d/${m[1]}/preview` : raw;
 
-  // Añade el token respetando si ya hay querystring
   const url = `${base}${base.includes('?') ? '&' : '?'}access_token=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`;
   return url;
 }
