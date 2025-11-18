@@ -497,7 +497,7 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
   createIframe() {
-    const iframe = '<iframe src="'+ this.pdfUrl() +'"  width="640" height="480"></iframe>';
+    const iframe = '<iframe src="'+ this.pdfUrl() +'" allow="clipboard-write" width="640" height="480"></iframe>';
     this.iframe = this.sanitizer.bypassSecurityTrustHtml( iframe);
   }
 
