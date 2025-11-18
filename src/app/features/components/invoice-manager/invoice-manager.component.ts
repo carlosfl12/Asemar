@@ -57,6 +57,7 @@ export class InvoiceManagerComponent implements OnInit {
   get correctInvoices() { return this.counters.correctInvoices }
   get totalInvoices() { return this.counters.totalInvoices };
   tipo = signal<string | null>("");
+  pending = signal<number>(0);
 
   // Códigos de error
   fields: DynamicFields<keyof InvoiceRow>[] = [];
@@ -101,7 +102,7 @@ export class InvoiceManagerComponent implements OnInit {
     importe_total: this.fb.control<number | null>(0),
     metodo_pago: this.fb.control<string | null>(null),
     prefijo: this.fb.control<string | null>(null),
-    cuenta_contable: this.fb.control<number | null>(0),
+    // cuenta_contable: this.fb.control<number | null>(0),
     num_apunte: this.fb.control<number | null>(0),
     longitud: this.fb.control<string |null>(null),
 
@@ -241,7 +242,7 @@ export class InvoiceManagerComponent implements OnInit {
       error: err => console.error('WS error:', err),
     });
     this.loadTotalInvoices();
-    // this.loadErrorCodes('308');
+    this.getPendingInvoices();
   }
 
   private isFilled(v: unknown) {
@@ -363,7 +364,7 @@ export class InvoiceManagerComponent implements OnInit {
           valid: updated.valid,
           url: updated.url,
           corregido: updated.corregido ?? 1,
-          cuenta_contable: updated.cuenta_contable,
+          // cuenta_contable: updated.cuenta_contable,
           tipo: updated.tipo,
           longitud: updated.longitud,
           nombre_factura: updated.nombre_factura,
@@ -484,19 +485,42 @@ export class InvoiceManagerComponent implements OnInit {
   }
 
 
-pdfUrl() {
-  const raw = this.selectedInvoice()?.row?.url || '';
-  if (!raw) return '';                                   
+  pdfUrl() {
+    const raw = this.selectedInvoice()?.row?.url || '';
+    if (!raw) return '';                                   
 
-  const m = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
-  const base = m ? `https://drive.google.com/file/d/${m[1]}/preview` : raw;
+    const m = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
+    const base = m ? `https://drive.google.com/file/d/${m[1]}/preview` : raw;
 
-  const url = `${base}${base.includes('?') ? '&' : '?'}access_token=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`;
-  return url;
-}
+    const url = `${base}${base.includes('?') ? '&' : '?'}access_token=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`;
+    return url;
+  }
 
   createIframe() {
     const iframe = '<iframe src="'+ this.pdfUrl() +'"  width="640" height="480"></iframe>';
     this.iframe = this.sanitizer.bypassSecurityTrustHtml( iframe);
   }
+
+  async getPendingInvoices() {
+    try {
+      const userId = this.selectedUserId() ?? 0;
+      const res = await fetch(`${this.apiUrl}/api/count`, {headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      console.log('[Pending Invoices]', data);
+      for (const invoice of data) {
+        if (invoice.id_user != userId) {
+          this.pending.set(invoice.pending);
+          console.log(invoice.pending);
+        }
+      }
+    } catch (err) {
+      console.error("Error", err);
+    }
+  }
+
+  goToSecciones() {
+    this.router.navigate(['/secciones']);
+  }
 }
+
