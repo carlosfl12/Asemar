@@ -26,7 +26,6 @@ export class DynamicFieldResolverService {
     for (const raw of codes ?? []) {
       const code = String(raw);
       const base = this.CATALOG[code];
-      console.log(base)
       if (!base) {
         const reason = `Código ${code} no está mapeado`;
         out.push({

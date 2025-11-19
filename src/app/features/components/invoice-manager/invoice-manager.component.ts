@@ -270,17 +270,63 @@ export class InvoiceManagerComponent implements OnInit {
     return null;
   }
 
+  private normalizeNumber(val: any): number | null {
+    if (val === null || val === undefined || val === '') {
+      return null;
+    }
+
+    if (typeof val === 'number') {
+      return isNaN(val) ? null : val;
+    }
+
+    if (typeof val === 'string') {
+      let normalized = val.trim();
+      const lastDot = normalized.lastIndexOf('.');
+      const lastComma = normalized.lastIndexOf(',');
+
+      if (lastComma > lastDot) {
+        normalized = normalized.replace(/\./g, '').replace(',', '.');
+      } else {
+        normalized = normalized.replace(/,/g, '');
+      }
+
+      const numVal = parseFloat(normalized);
+      return isNaN(numVal) ? null : numVal;
+    }
+
+    return null;
+  }
+
   private patchRowOnlyFilled(row: InvoiceRow) {
     const partial: any = {};
+    
+    // Campos que deben ser numéricos
+    const numericFields = [
+      'cod_empresa', 'base1', 'iva1', 'cuota1', 'recargo1',
+      'base2', 'iva2', 'cuota2', 'recargo2',
+      'base3', 'iva3', 'cuota3', 'recargo3',
+      'base_retencion', 'porcentaje_retencion', 'cuota_retencion',
+      'importe_total', 'num_apunte'
+    ];
+
     (Object.keys(this.form.controls) as (keyof InvoiceRow)[]).forEach((k) => {
       const val = row[k];
+
       if (k === 'fecha') {
         const f = this.toInputDate(val as string | null);
-        if (this.isFilled(f)) partial[k] = f;
+        partial[k] = f;
         return;
       }
-      if (this.isFilled(val)) partial[k] = val;
+
+      if (numericFields.includes(k as string)) {
+        partial[k] = this.normalizeNumber(val);
+        return;
+      }
+
+      // Rellenar los campos
+      partial[k] = val !== undefined ? val : null;
     });
+
     this.form.patchValue(partial, { emitEvent: false });
   }
 
@@ -321,6 +367,7 @@ export class InvoiceManagerComponent implements OnInit {
     const userId = this.selectedUserId() ?? '0';
     this.router.navigate(['/', userId, 'facturas', inv.row.id_doc_drive]).then(() => {
       if (inv.row.error_code) this.loadErrorCodes(inv.row.error_code);
+      console.log(inv.row);
     });
     document.body.style.overflow = 'hidden';
   }
@@ -507,11 +554,9 @@ export class InvoiceManagerComponent implements OnInit {
       const res = await fetch(`${this.apiUrl}/api/count`, {headers: { 'Accept': 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      console.log('[Pending Invoices]', data);
       for (const invoice of data) {
         if (invoice.id_user != userId) {
           this.pending.set(invoice.pending);
-          console.log(invoice.pending);
         }
       }
     } catch (err) {
