@@ -1,207 +1,288 @@
 <!-- Barra superior -->
 <header class="topbar">
-    <div class="brand">
-        <span class="icon">🧾</span>
-        <div>
-            <h1>Gestión de Facturas</h1>
-            <p>Sistema de procesamiento automático</p>
-        </div>
+  <div class="brand">
+    <span class="icon">🧾</span>
+    <div>
+      <h1>Gestión de Facturas</h1>
+      <p>Sistema de procesamiento automático</p>
     </div>
+  </div>
 
-    <button class="btn-outline" (click)="goToSecciones()">Pendientes ({{ pending() }})</button>
+  <button class="btn-outline" (click)="goToSecciones()">
+    Pendientes ({{ pending() }})
+  </button>
 </header>
 
 <main class="container">
-    <!-- Lista -->
-    <section class="list">
-        <div class="facts">
-            <h2>Mis Facturas</h2>
-            <p>Facturas: {{ correctInvoices() }} de {{ totalInvoices() }}</p>
-        </div>
+  <!-- Lista -->
+  <section class="list">
+    <div class="facts">
+      <h2>Mis Facturas</h2>
+      <p>Facturas: {{ correctInvoices() }} de {{ totalInvoices() }}</p>
+    </div>
 
-        <div class="card" *ngFor="let row of invoices()">
-            <div class="left">
-                <span class="error-dot">!</span>
-                <div class="meta">
-                    <div class="name">{{ row.fileName }}</div>
-                    <div class="date">{{ row.createdAt }}</div>
-                </div>
-            </div>
-
-            <div class="right">
-                <button class="btn" (click)="open(row)">Corregir</button>
-            </div>
+    <div class="card" *ngFor="let row of invoices()">
+      <div class="left">
+        <span class="error-dot">!</span>
+        <div class="meta">
+          <div class="name">{{ row.fileName }}</div>
+          <div class="date">{{ row.createdAt }}</div>
         </div>
-    </section>
+      </div>
+
+      <div class="right">
+        <button class="btn" (click)="open(row)">Corregir</button>
+      </div>
+    </div>
+  </section>
 </main>
 
 <!-- Modal -->
-<div class="modal-backdrop" *ngIf="selectedInvoice() as inv" (click)="closeModal()"></div>
+<div
+  class="modal-backdrop"
+  *ngIf="selectedInvoice() as inv"
+  (click)="closeModal()"
+></div>
 
-<div class="modal" *ngIf="selectedInvoice() as inv" role="dialog" aria-modal="true">
-    <div class="modal-header">
-        <h3>
-            Editar Factura: {{ inv.fileName }}
-            <small *ngIf="lastNumDoc() !== null" style="font-weight:400;color:#6b7280;margin-left:8px;">
-                · Doc #{{ lastNumDoc() }}
-            </small>
-        </h3>
-        <div class="form-toggle" style="display:flex;align-items:center;gap:.5rem;margin:0 0 1rem;">
-            <button class="toggle-btn"
-            (click)="toggleShowAll()"
-            [class.active]="showAll()"
-            [attr.aria-pressed]="showAll()"
-            [title]="showAll() ? 'Mostrando todos' : 'Mostrando fallidos'">
-            {{showAll() ? 'Mostrar fallidos' : 'Mostrar todos'}}
-            </button>
-        </div>
+<div
+  class="modal"
+  *ngIf="selectedInvoice() as inv"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="modal-header">
+    <h3>
+      Editar Factura: {{ inv.fileName }}
+      <small
+        *ngIf="lastNumDoc() !== null"
+        style="font-weight: 400; color: #6b7280; margin-left: 8px"
+      >
+        · Doc #{{ lastNumDoc() }}
+      </small>
+    </h3>
+    <div
+      class="form-toggle"
+      style="display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1rem"
+    >
+      <button
+        class="toggle-btn"
+        (click)="toggleShowAll()"
+        [class.active]="showAll()"
+        [attr.aria-pressed]="showAll()"
+        [title]="showAll() ? 'Mostrando todos' : 'Mostrando fallidos'"
+      >
+        {{ showAll() ? "Mostrar fallidos" : "Mostrar todos" }}
+      </button>
     </div>
+  </div>
 
-    <div class="modal-body">
-        <!-- PDF -->
-        <div #visualizador class="pdf-pane" [innerHTML]="iframe" >
-        </div>
+  <div class="modal-body">
+    <!-- PDF -->
+    <div #visualizador class="pdf-pane" [innerHTML]="iframe"></div>
 
-        <!-- Formulario ligado 1:1 a InvoiceRow -->
-        <form class="form" [formGroup]="form" (ngSubmit)="saveDataAndSend()">
-              <ng-container *ngIf="!showAll(); else fullView">
-                <fieldset>
-                    <legend>Datos fallidos</legend>
-                    <ng-container *ngFor="let f of fields">
-                        <label [attr.for]="'fld-' + f.key">{{ f.label }}
-                            <input
-                            [id]="'fld-' + f.key"
-                            [type]="f.type"
-                            [step]="f.step || null"
-                            [formControlName]="f.control"
-                            [attr.placeholder]="f.placeholder || null">
-                        </label>
-                    </ng-container>
-                </fieldset>
+    <!-- Formulario ligado 1:1 a InvoiceRow -->
+    <form class="form" [formGroup]="form" (ngSubmit)="saveDataAndSend()">
+      <ng-container *ngIf="!showAll(); else fullView">
+        <fieldset>
+          <legend>Datos fallidos</legend>
+          <ng-container *ngFor="let f of fields">
+            <ng-container *ngIf="isControlArray(f.control); else singleControl">
+              <div class="field-group">
+                <span class="field-group-label">{{ f.label }}</span>
+                <label
+                  *ngFor="let ctrl of asControlArray(f.control); let i = index"
+                  [attr.for]="'fld-' + f.key + '-' + i"
+                >
+                  {{ getControlLabel(ctrl) }}
+                  <input
+                    [id]="'fld-' + f.key + '-' + i"
+                    [type]="f.type"
+                    [step]="f.step || null"
+                    [formControlName]="ctrl"
+                    [attr.placeholder]="f.placeholder || null"
+                  />
+                </label>
+              </div>
             </ng-container>
-            <ng-template #fullView>
-                <h4>Datos de la Factura</h4>
-
-
-                <label> Número de Factura
-                    <input formControlName="numero_factura">
-                </label>
-                <label> Nombre de Factura
-                    <input formControlName="nombre_factura">
-                </label>
-
-                <label> Fecha de Factura
-                    <input type="date" formControlName="fecha" placeholder="dd/mm/aaaa">
-                </label>
-
-                <label> Código empresa
-                    <input type="number" formControlName="cod_empresa">
-                </label>
-
-                <label>Nombre Cliente
-                    <input formControlName="nombre_cliente" placeholder="Nombre del cliente">
-                </label>
-
-                <label> Nombre del Proveedor
-                    <input formControlName="nombre_proveedor" placeholder="Nombre de la empresa">
-                </label>
-
-                <label> NIF/CIF Proveedor (emisión)
-                    <input formControlName="nif_emision">
-                </label>
-
-                <label> NIF/CIF Receptor
-                    <input formControlName="nif_receptor">
-                </label>
-
-                <label>CIF lateral
-                    <input formControlName="cif_lateral">
-                </label>
-
-                <label> Subtotal-1 (€) 
-                    <input type="number" step="0.01" formControlName="base1">
-                </label>
-
-                <label> IVA-1 (% o €)
-                    <input type="number" step="0.01" formControlName="iva1">
-                </label>
-
-                <label> Cuota-1 (€)
-                    <input type="number" step="0.01" formControlName="cuota1">
-                </label>
-
-                <label> Recargo-1 (€)
-                    <input type="number" step="0.01" formControlName="recargo1">
-                </label>
-
-                <label> Subtotal-2 (€)
-                    <input type="number" step="0.01" formControlName="base2">
-                </label>
-
-                <label> IVA-2 (% o €)
-                    <input type="number" step="0.01" formControlName="iva2">
-                </label>
-
-                <label> Cuota-2 (€)
-                    <input type="number" step="0.01" formControlName="cuota2">
-                </label>
-
-                <label> Recargo-2 (€)
-                    <input type="number" step="0.01" formControlName="recargo2">
-                </label>
-
-                <label> Subtotal-3 (€)
-                    <input type="number" step="0.01" formControlName="base3">
-                </label>
-
-                <label> IVA-3 (% o €)
-                    <input type="number" step="0.01" formControlName="iva3">
-                </label>
-
-                <label> Cuota-3 (€)
-                    <input type="number" step="0.01" formControlName="cuota3">
-                </label>
-
-                <label> Recargo-3 (€)
-                    <input type="number" step="0.01" formControlName="recargo3">
-                </label>
-                
-                <label> Base retención
-                    <input type="number" step="0.01" formControlName=base_retencion>
-                </label>
-
-                <label> % Retención
-                    <input type="number" step="1" formControlName="porcentaje_retencion">
-                </label>
-
-                <label> Cuota Retención
-                    <input type="number" step="1" formControlName="cuota_retencion">
-                </label>
-                <label> Tipo de Factura
-                    <input formControlName="tipo" placeholder="Compras o Ventas">
-                </label>
-
-                <label> Importe Total (€)
-                    <input type="number" step="0.01" formControlName="importe_total">
-                </label>
-
-                <!-- Campos adicionales útiles -->
-                <label> Método de pago
-                    <input formControlName="metodo_pago" placeholder="Transferencia, tarjeta…">
-                </label>
-
-                <label> Prefijo
-                    <input formControlName="prefijo" placeholder="Ej: F-2024">
-                </label>
+            <!-- Si control es único, renderizar como antes -->
+            <ng-template #singleControl>
+              <label [attr.for]="'fld-' + f.key"
+                >{{ f.label }}
+                <input
+                  [id]="'fld-' + f.key"
+                  [type]="f.type"
+                  [step]="f.step || null"
+                  [formControlName]="$any(f.control)"
+                  [attr.placeholder]="f.placeholder || null"
+                />
+              </label>
             </ng-template>
+          </ng-container>
+        </fieldset>
+      </ng-container>
+      <ng-template #fullView>
+        <h4>Datos de la Factura</h4>
 
-            <!-- Ocultos en UI pero parte del modelo -->
-            <input type="hidden" formControlName="url">
-            <input type="hidden" formControlName="valid">
+        <label>
+          Número de Factura
+          <input formControlName="numero_factura" />
+        </label>
+        <label>
+          Nombre de Factura
+          <input formControlName="nombre_factura" />
+        </label>
 
-            <div class="actions">
-                <button type="submit" class="btn-primary">💾 Guardar y Enviar</button>
-            </div>
-        </form>
-    </div>
+        <label>
+          Fecha de Factura
+          <input type="date" formControlName="fecha" placeholder="dd/mm/aaaa" />
+        </label>
+
+        <label>
+          Código empresa
+          <input type="number" formControlName="cod_empresa" />
+        </label>
+
+        <label
+          >Nombre Cliente
+          <input
+            formControlName="nombre_cliente"
+            placeholder="Nombre del cliente"
+          />
+        </label>
+
+        <label>
+          Nombre del Proveedor
+          <input
+            formControlName="nombre_proveedor"
+            placeholder="Nombre de la empresa"
+          />
+        </label>
+
+        <label>
+          NIF/CIF Proveedor (emisión)
+          <input formControlName="nif_emision" />
+        </label>
+
+        <label>
+          NIF/CIF Receptor
+          <input formControlName="nif_receptor" />
+        </label>
+
+        <label
+          >CIF lateral
+          <input formControlName="cif_lateral" />
+        </label>
+
+        <label>
+          Subtotal-1 (€)
+          <input type="number" step="0.01" formControlName="base1" />
+        </label>
+
+        <label>
+          IVA-1 (% o €)
+          <input type="number" step="0.01" formControlName="iva1" />
+        </label>
+
+        <label>
+          Cuota-1 (€)
+          <input type="number" step="0.01" formControlName="cuota1" />
+        </label>
+
+        <label>
+          Recargo-1 (€)
+          <input type="number" step="0.01" formControlName="recargo1" />
+        </label>
+
+        <label>
+          Subtotal-2 (€)
+          <input type="number" step="0.01" formControlName="base2" />
+        </label>
+
+        <label>
+          IVA-2 (% o €)
+          <input type="number" step="0.01" formControlName="iva2" />
+        </label>
+
+        <label>
+          Cuota-2 (€)
+          <input type="number" step="0.01" formControlName="cuota2" />
+        </label>
+
+        <label>
+          Recargo-2 (€)
+          <input type="number" step="0.01" formControlName="recargo2" />
+        </label>
+
+        <label>
+          Subtotal-3 (€)
+          <input type="number" step="0.01" formControlName="base3" />
+        </label>
+
+        <label>
+          IVA-3 (% o €)
+          <input type="number" step="0.01" formControlName="iva3" />
+        </label>
+
+        <label>
+          Cuota-3 (€)
+          <input type="number" step="0.01" formControlName="cuota3" />
+        </label>
+
+        <label>
+          Recargo-3 (€)
+          <input type="number" step="0.01" formControlName="recargo3" />
+        </label>
+
+        <label>
+          Base retención
+          <input type="number" step="0.01" formControlName="base_retencion" />
+        </label>
+
+        <label>
+          % Retención
+          <input
+            type="number"
+            step="1"
+            formControlName="porcentaje_retencion"
+          />
+        </label>
+
+        <label>
+          Cuota Retención
+          <input type="number" step="1" formControlName="cuota_retencion" />
+        </label>
+        <label>
+          Tipo de Factura
+          <input formControlName="tipo" placeholder="Compras o Ventas" />
+        </label>
+
+        <label>
+          Importe Total (€)
+          <input type="number" step="0.01" formControlName="importe_total" />
+        </label>
+
+        <!-- Campos adicionales útiles -->
+        <label>
+          Método de pago
+          <input
+            formControlName="metodo_pago"
+            placeholder="Transferencia, tarjeta…"
+          />
+        </label>
+
+        <label>
+          Prefijo
+          <input formControlName="prefijo" placeholder="Ej: F-2024" />
+        </label>
+      </ng-template>
+
+      <!-- Ocultos en UI pero parte del modelo -->
+      <input type="hidden" formControlName="url" />
+      <input type="hidden" formControlName="valid" />
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">💾 Guardar y Enviar</button>
+      </div>
+    </form>
+  </div>
 </div>

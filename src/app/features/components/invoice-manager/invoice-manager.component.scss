@@ -1,491 +1,492 @@
 /* Layout base */
 :host {
-    display: block;
-    color: #0f172a; // slate-900
-    background: #fff;
-    min-height: 100dvh;
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  display: block;
+  color: #0f172a; // slate-900
+  background: #fff;
+  min-height: 100dvh;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
 }
 
 /* Topbar */
 .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 22px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+
+  .brand {
     display: flex;
-    justify-content: space-between;
+    gap: 12px;
     align-items: center;
-    padding: 14px 22px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #fff;
 
-    .brand {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-
-        .icon {
-            font-size: 28px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        p {
-            margin: 0;
-            font-size: 12px;
-            color: #6b7280;
-        }
+    .icon {
+      font-size: 28px;
     }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  }
 }
 
 .btn-outline {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    padding: 8px 12px;
-    border-radius: 10px;
-    cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 /* Main */
 .container {
-    max-width: 1200px;
-    margin: 24px auto 64px;
-    padding: 0 16px;
+  max-width: 1200px;
+  margin: 24px auto 64px;
+  padding: 0 16px;
 }
 
 h2 {
-    font-size: 20px;
+  font-size: 20px;
 }
 
 /* Uploader */
 .uploader .dropzone {
-    border: 2px dashed #e5e7eb;
-    border-radius: 16px;
-    background: #fafafa;
-    height: 320px;
-    display: grid;
-    place-items: center;
+  border: 2px dashed #e5e7eb;
+  border-radius: 16px;
+  background: #fafafa;
+  height: 320px;
+  display: grid;
+  place-items: center;
 }
 
 .dz-inner {
-    text-align: center;
+  text-align: center;
 }
 
 .circle {
-    width: 64px;
-    height: 64px;
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #4f46e5;
-    display: grid;
-    place-items: center;
-    margin: 0 auto 8px;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 8px;
 
-    span {
-        font-size: 28px;
-    }
+  span {
+    font-size: 28px;
+  }
 }
 
 .dz-inner h3 {
-    margin: 6px 0;
-    font-size: 18px;
+  margin: 6px 0;
+  font-size: 18px;
 }
 
 .dz-inner p {
-    margin: 0 0 12px;
-    color: #6b7280;
+  margin: 0 0 12px;
+  color: #6b7280;
 }
 
 .btn-light {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    padding: 10px 14px;
-    border-radius: 10px;
-    cursor: pointer;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .file-icon {
-    margin-right: 8px;
+  margin-right: 8px;
 }
 
 /* Lista */
 .list {
-    margin-top: 28px;
+  margin-top: 28px;
 }
 
 .card {
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  background: #fff;
 }
 
 .left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .error-dot {
-    width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    background: #fee2e2;
-    color: #b91c1c;
-    font-weight: 700;
-    font-size: 12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .meta .name {
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .meta .date {
-    color: #6b7280;
-    font-size: 12px;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 .right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .chip {
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
 
-    &.danger {
-        background: #fee2e2;
-        color: #b91c1c;
-    }
+  &.danger {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
 }
 
 .btn {
-    background: #111827;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 10px;
 }
 
 /* Modal */
 .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .35);
-    z-index: 20;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
 }
 
 .modal {
-    position: fixed;
-    inset: 24px;
-    z-index: 30;
-    background: #fff;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    max-width: 1120px;
-    margin: 0 auto;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+  position: fixed;
+  inset: 24px;
+  z-index: 30;
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  max-width: 1120px;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 18px;
-    border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
 
-    h3 {
-        margin: 0;
-        font-size: 18px;
-    }
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
 
-    .close {
-        background: transparent;
-        border: none;
-        font-size: 20px;
-        cursor: pointer;
-    }
+  .close {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
 }
 
 .modal-body {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 18px;
-    padding: 18px;
-    height: calc(100% - 66px);
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 18px;
+  padding: 18px;
+  height: calc(100% - 66px);
 }
 
 .pdf-pane {
-    position: relative;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    overflow: hidden;
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
 
-    iframe {
-        width: 100%;
-        height: 100%;
-        border: 0;
-        background: #f8fafc;
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #f8fafc;
+  }
+
+  .pdf-toolbar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 8px;
+
+    button {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      cursor: pointer;
     }
-
-    .pdf-toolbar {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        display: flex;
-        gap: 8px;
-
-        button {
-            border: 1px solid #e5e7eb;
-            background: #fff;
-            border-radius: 8px;
-            padding: 6px 8px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-    }
+  }
 }
 
 /* Formulario */
 .form {
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    overflow: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  overflow: auto;
 
-    h4 {
-        margin: 0 0 4px;
-        font-size: 18px;
-    }
+  h4 {
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
 
-    label {
-        display: grid;
-        gap: 6px;
-        font-size: 13px;
-    }
-
-    input {
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 14px;
-        outline: none;
-    }
-
-    .actions {
-        margin-top: 8px;
-    }
-}
-
-.btn-primary {
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    padding: 12px 14px;
-    border-radius: 10px;
-    width: 100%;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-/* === MODAL === */
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .45);
-    z-index: 999;
-}
-
-.modal {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: min(1120px, 96vw);
-    height: min(92vh, 900px);
-    background: #fff;
-    border-radius: 16px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, .28);
-    z-index: 1000;
-    overflow: hidden;
-    /* evita scroll doble en el contenedor */
-}
-
-.modal-header {
-    flex: 0 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 18px;
-    border-bottom: 1px solid #e5e7eb;
-
-    h3 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 700;
-    }
-
-    .close {
-        background: transparent;
-        border: 0;
-        font-size: 22px;
-        cursor: pointer;
-    }
-}
-
-/* Contenedor scrolleable solo del contenido */
-.modal-scroll {
-    flex: 1 1 auto;
-    overflow: auto;
-    /* el scroll está aquí */
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Cuerpo con dos columnas */
-.modal-body {
-    display: grid;
-    grid-template-columns: 1.25fr 1fr;
-    /* PDF un poco más ancho */
-    gap: 18px;
-    padding: 18px;
-    min-height: 520px;
-}
-
-/* === PDF === */
-.pdf-pane {
-    position: relative;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    background: #f8fafc;
-    overflow: hidden;
-    min-height: 520px;
-    /* asegura altura usable */
-}
-
-.pdf-pane iframe {
-    display: block;
-    width: 100%;
-    height: calc(100% - 44px);
-    /* deja sitio a la toolbar */
-    border: 0;
-}
-
-.pdf-toolbar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 10px;
-    background: rgba(255, 255, 255, .92);
-    border-bottom: 1px solid #e5e7eb;
-    backdrop-filter: blur(4px);
-
-    button {
-        border: 1px solid #e5e7eb;
-        background: #fff;
-        border-radius: 8px;
-        padding: 6px 8px;
-        font-size: 12px;
-        cursor: pointer;
-    }
-}
-
-/* === FORM === */
-.form {
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    display: grid;
-    gap: 12px;
-    align-content: start;
-    min-width: 320px;
-    /* evita que se haga demasiado estrecho */
-    max-height: 100%;
-}
-
-.form label {
+  label {
     display: grid;
     gap: 6px;
     font-size: 13px;
-}
+  }
 
-.form input {
+  input {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 14px;
     outline: none;
+  }
+
+  .actions {
+    margin-top: 8px;
+  }
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  width: 100%;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* === MODAL === */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+}
+
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1120px, 96vw);
+  height: min(92vh, 900px);
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  z-index: 1000;
+  overflow: hidden;
+  /* evita scroll doble en el contenedor */
+}
+
+.modal-header {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
+
+  h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .close {
+    background: transparent;
+    border: 0;
+    font-size: 22px;
+    cursor: pointer;
+  }
+}
+
+/* Contenedor scrolleable solo del contenido */
+.modal-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  /* el scroll está aquí */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Cuerpo con dos columnas */
+.modal-body {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  /* PDF un poco más ancho */
+  gap: 18px;
+  padding: 18px;
+  min-height: 520px;
+}
+
+/* === PDF === */
+.pdf-pane {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  overflow: hidden;
+  min-height: 520px;
+  /* asegura altura usable */
+}
+
+.pdf-pane iframe {
+  display: block;
+  width: 100%;
+  height: calc(100% - 44px);
+  /* deja sitio a la toolbar */
+  border: 0;
+}
+
+.pdf-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #e5e7eb;
+  backdrop-filter: blur(4px);
+
+  button {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+}
+
+/* === FORM === */
+.form {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 320px;
+  /* evita que se haga demasiado estrecho */
+  max-height: 100%;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.form input {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
 }
 
 .form .actions {
-    position: sticky;
-    bottom: -16px;
-    /* truco para que no tape borde */
-    padding-top: 4px;
-    background: #fff;
+  position: sticky;
+  bottom: -16px;
+  /* truco para que no tape borde */
+  padding-top: 4px;
+  background: #fff;
 }
 
 /* Botón primario consistente */
 .btn-primary {
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    padding: 12px 14px;
-    border-radius: 10px;
-    width: 100%;
-    cursor: pointer;
-    font-weight: 600;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 12px 14px;
+  border-radius: 10px;
+  width: 100%;
+  cursor: pointer;
+  font-weight: 600;
 }
 
 /* === Responsive === */
 @media (max-width: 1100px) {
-    .modal-body {
-        grid-template-columns: 1fr;
-    }
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
 
-    .pdf-pane {
-        min-height: 420px;
-    }
+  .pdf-pane {
+    min-height: 420px;
+  }
 
-    .form {
-        min-width: auto;
-    }
+  .form {
+    min-width: auto;
+  }
 }
 
 .facts {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .facts h2,
 .facts p {
-    margin-bottom: 1.5em;        
+  margin-bottom: 1.5em;
 }
 
 .toggle-btn {
@@ -497,9 +498,35 @@ h2 {
   cursor: pointer;
   color: white;
 }
-.toggle-btn:hover { background: #4676df; }
+.toggle-btn:hover {
+  background: #4676df;
+}
 .toggle-btn.active {
   background: #111827;
   color: #fff;
   border-color: #111827;
+}
+
+/* Estilos para campos agrupados (cuando control es array) */
+.field-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f9fafb;
+
+  .field-group-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  label {
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }

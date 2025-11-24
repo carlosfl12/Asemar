@@ -1,44 +1,61 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PushService } from '../../../services/push.service';
-import { environment } from '../../../../environments/environment';
+import { OnesignalService } from '../../../services/onesignal.service';
 
 @Component({
   standalone: true,
-  selector: 'asm-admin.page',
+  selector: 'app-admin-page',
   imports: [CommonModule],
   templateUrl: './admin.page.html',
-  styleUrl: './admin.page.scss'
+  styleUrl: './admin.page.scss',
 })
-
 export class AdminPage implements OnInit {
-  private readonly serveUrl = environment.serveUrl;
-  ngOnInit() {
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    console.log(window.OneSignalDeferred);
+  estaSuscrito = false;
+  cargando = false;
+
+  constructor(private onesignalService: OnesignalService) {}
+
+  async ngOnInit() {
+    // Inicializar OneSignal al cargar la página
+    try {
+      await this.onesignalService.initialize();
+      this.estaSuscrito = await this.onesignalService.estaSuscritoComoAdmin();
+    } catch (error) {
+      console.error('Error al inicializar:', error);
+    }
   }
 
-  activar() {
-    (window as any).OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal: any) => {
-      await OneSignal.init({
-        appId: '41a4d282-847d-4a34-a61b-3e82a732204d',
-        allowLocalhostAsSecureOrigin: true,
-        serviceWorkerPath: 'onesignal/OneSignalSDKWorker.js',
-        serviceWorkerParam: { scope: '/asemar/onesignal/' },
-        notificationClickHandlerMatch: 'exact',
-        notificationClickHandlerAction: 'navigate'
-      });
-      OneSignal.Notifications.setDefaultUrl(`${this.serveUrl}/sse`);
-      await OneSignal.login('admin');
-      sessionStorage.setItem('isAdmin', '1');
+  async activarNotificaciones() {
+    this.cargando = true;
 
-      // Muestra prompt v16 (slidedown). Si no sale, usa showNativePrompt().
-      if (OneSignal?.Slidedown?.promptPush) {
-        await OneSignal.Slidedown.promptPush();
-      } else if (OneSignal?.Notifications?.requestPermission) {
-        await OneSignal.Notifications.requestPermission(); // fallback
+    try {
+      const exito = await this.onesignalService.suscribirComoAdmin();
+
+      if (exito) {
+        this.estaSuscrito = true;
+        alert('✅ ¡Notificaciones activadas correctamente!');
+      } else {
+        alert('❌ No se pudieron activar las notificaciones');
       }
-    });
+    } catch (error) {
+      console.error('Error:', error);
+      alert('❌ Error al activar las notificaciones. Revisa la consola.');
+    } finally {
+      this.cargando = false;
+    }
+  }
+
+  async desactivarNotificaciones() {
+    this.cargando = true;
+
+    try {
+      await this.onesignalService.cerrarSesionAdmin();
+      this.estaSuscrito = false;
+      alert('✅ Notificaciones desactivadas');
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      this.cargando = false;
+    }
   }
 }

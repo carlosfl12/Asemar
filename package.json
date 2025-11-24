@@ -7,7 +7,8 @@
     "build": "ng build --configuration production",
     "postbuild": "node scripts/copy-404.cjs",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "local": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json"
   },
   "private": true,
   "dependencies": {

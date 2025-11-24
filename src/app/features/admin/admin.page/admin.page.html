@@ -1,1 +1,44 @@
-<button (click)="activar()">Activar notificaciones</button>
+<div class="admin-container">
+  <h1>Panel de Administrador</h1>
+
+  <div class="notificaciones-card">
+    <h2>Notificaciones Push</h2>
+
+    <div class="estado" [class.activo]="estaSuscrito">
+      <span class="icono">{{ estaSuscrito ? '🔔' : '🔕' }}</span>
+      <p>
+        Estado:
+        <strong>{{ estaSuscrito ? 'Activadas' : 'Desactivadas' }}</strong>
+      </p>
+    </div>
+
+    <div class="acciones">
+      <button
+        *ngIf="!estaSuscrito"
+        (click)="activarNotificaciones()"
+        [disabled]="cargando"
+        class="btn btn-primary"
+      >
+        {{ cargando ? 'Activando...' : 'Activar Notificaciones' }}
+      </button>
+
+      <button
+        *ngIf="estaSuscrito"
+        (click)="desactivarNotificaciones()"
+        [disabled]="cargando"
+        class="btn btn-secondary"
+      >
+        Desactivar Notificaciones
+      </button>
+    </div>
+
+    <div class="info">
+      <p>
+        <small>
+          Al activar las notificaciones, recibirás alertas cuando los usuarios
+          entren en la aplicación.
+        </small>
+      </p>
+    </div>
+  </div>
+</div>

@@ -567,5 +567,53 @@ export class InvoiceManagerComponent implements OnInit {
   goToSecciones() {
     this.router.navigate(['/secciones']);
   }
+
+  // Helper methods para manejar campos con control como array
+  isControlArray(control: keyof InvoiceRow | (keyof InvoiceRow)[]): boolean {
+    return Array.isArray(control);
+  }
+
+  asControlArray(control: keyof InvoiceRow | (keyof InvoiceRow)[]): (keyof InvoiceRow)[] {
+    return Array.isArray(control) ? control : [control];
+  }
+
+  getControlLabel(controlName: keyof InvoiceRow): string {
+    // Mapeo de nombres de controles a etiquetas legibles
+    const labelMap: Record<string, string> = {
+      'numero_factura': 'Número de Factura',
+      'nombre_factura': 'Nombre de Factura',
+      'nombre_cliente': 'Nombre Cliente',
+      'nombre_proveedor': 'Nombre Proveedor',
+      'fecha': 'Fecha',
+      'cod_empresa': 'Código Empresa',
+      'nif_emision': 'NIF Emisor',
+      'nif_receptor': 'NIF Receptor',
+      'cif_lateral': 'CIF Lateral',
+      'base1': 'Base 1',
+      'iva1': 'IVA 1',
+      'cuota1': 'Cuota 1',
+      'recargo1': 'Recargo 1',
+      'base2': 'Base 2',
+      'iva2': 'IVA 2',
+      'cuota2': 'Cuota 2',
+      'recargo2': 'Recargo 2',
+      'base3': 'Base 3',
+      'iva3': 'IVA 3',
+      'cuota3': 'Cuota 3',
+      'recargo3': 'Recargo 3',
+      'base_retencion': 'Base Retención',
+      'porcentaje_retencion': '% Retención',
+      'cuota_retencion': 'Cuota Retención',
+      'importe_total': 'Importe Total',
+      'metodo_pago': 'Método de Pago',
+      'prefijo': 'Prefijo',
+      'cuenta_contable': 'Cuenta Contable',
+      'num_apunte': 'Número de Asiento',
+      'longitud': 'Longitud',
+      'tipo': 'Tipo'
+    };
+
+    return labelMap[controlName as string] || String(controlName);
+  }
 }
 
