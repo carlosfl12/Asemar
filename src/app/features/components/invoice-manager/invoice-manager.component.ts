@@ -92,7 +92,6 @@ export class InvoiceManagerComponent implements OnInit {
     nombre_cliente: this.fb.control<string | null>(null),
     nombre_proveedor: this.fb.control<string | null>(null),
     fecha: this.fb.control<string | null>(null),
-    cod_empresa: this.fb.control<number | null>(null),
     nif_emision: this.fb.control<string | null>(null),
     nif_receptor: this.fb.control<string | null>(null),
     cif_lateral: this.fb.control<string | null>(null),
@@ -201,6 +200,7 @@ export class InvoiceManagerComponent implements OnInit {
         const idDocDrive = evt?.id_doc_drive ?? '';
         const tipo = evt?.tipo ?? '';
         const nombreFactura = evt?.nombre_factura ?? '';
+        const timestamp = evt?.timestamp ?? '';
         this.lastNumDoc.set(numDoc);
         this.errorCode.set(codeError);
 
@@ -222,6 +222,7 @@ export class InvoiceManagerComponent implements OnInit {
             id_doc_drive: idDocDrive,
             tipo: tipo,
             nombre_factura: nombreFactura,
+            timestamp: timestamp,
           };
         }
         const item = payload as InvoiceRow;
@@ -329,7 +330,6 @@ export class InvoiceManagerComponent implements OnInit {
 
     // Campos que deben ser numéricos
     const numericFields = [
-      'cod_empresa',
       'base1',
       'iva1',
       'cuota1',
@@ -470,8 +470,9 @@ export class InvoiceManagerComponent implements OnInit {
       longitud: updated.longitud,
       nombre_factura: updated.nombre_factura,
       num_apunte: updated.num_apunte,
-      codigo_empresa: updated.cod_empresa,
       id_doc_drive: inv.row.id_doc_drive,
+      timestamp: inv.row.timestamp,
+      userId: this.route.snapshot.paramMap.get('userId') ?? '',
     };
 
     try {
@@ -656,7 +657,6 @@ export class InvoiceManagerComponent implements OnInit {
       nombre_cliente: 'Nombre Cliente',
       nombre_proveedor: 'Nombre Proveedor',
       fecha: 'Fecha',
-      cod_empresa: 'Código Empresa',
       nif_emision: 'NIF Emisor',
       nif_receptor: 'NIF Receptor',
       cif_lateral: 'CIF Lateral',
