@@ -1,4 +1,14 @@
-import { Component, computed, effect, inject, signal, OnInit, viewChild, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  OnInit,
+  viewChild,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -10,7 +20,7 @@ import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 import { DynamicFields } from '../../../models/dynamic-fields.types';
 import { DynamicFieldResolverService } from '../../../shared/resolvers/dynamic-field-resolver.service';
-import { DomSanitizer, SafeResourceUrl  } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CounterService } from '../../../core/stores/counter.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -28,12 +38,17 @@ interface UiInvoiceItem {
 @Component({
   selector: 'app-invoice-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgxExtendedPdfViewerModule, PdfViewerModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    NgxExtendedPdfViewerModule,
+    PdfViewerModule,
+  ],
   templateUrl: './invoice-manager.component.html',
   styleUrls: ['./invoice-manager.component.scss'],
 })
 export class InvoiceManagerComponent implements OnInit {
-  @ViewChild ("visualizador") visualizador!: ElementRef;
+  @ViewChild('visualizador') visualizador!: ElementRef;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private fb = inject(FormBuilder);
@@ -54,19 +69,22 @@ export class InvoiceManagerComponent implements OnInit {
 
   // Facturas
   invoices = signal<UiInvoiceItem[]>([]);
-  get correctInvoices() { return this.counters.correctInvoices }
-  get totalInvoices() { return this.counters.totalInvoices };
-  tipo = signal<string | null>("");
+  get correctInvoices() {
+    return this.counters.correctInvoices;
+  }
+  get totalInvoices() {
+    return this.counters.totalInvoices;
+  }
+  tipo = signal<string | null>('');
   pending = signal<number>(0);
 
   // Códigos de error
   fields: DynamicFields<keyof InvoiceRow>[] = [];
-  errorCode = signal("");
+  errorCode = signal('');
 
   selectedId = signal<string | null>(null);
   selectedUserId = signal<string | null>(null);
   selectedInvoice = signal<UiInvoiceItem | null>(null);
-
 
   form = this.fb.nonNullable.group({
     numero_factura: this.fb.control<string | null>(null),
@@ -104,14 +122,17 @@ export class InvoiceManagerComponent implements OnInit {
     prefijo: this.fb.control<string | null>(null),
     // cuenta_contable: this.fb.control<number | null>(0),
     num_apunte: this.fb.control<number | null>(0),
-    longitud: this.fb.control<string |null>(null),
+    longitud: this.fb.control<string | null>(null),
 
     valid: this.fb.control<boolean>(false),
     url: this.fb.control<string | null>(null),
     corregido: this.fb.control<number | null>(1),
   });
 
-  constructor(private sanitizer: DomSanitizer, private counters: CounterService) {
+  constructor(
+    private sanitizer: DomSanitizer,
+    private counters: CounterService
+  ) {
     effect(() => {
       const params = this.paramMapSig();
       const id = params.get('id');
@@ -127,7 +148,8 @@ export class InvoiceManagerComponent implements OnInit {
       }
 
       const list = this.invoices();
-      const found = list.find(x => String(x.row?.id_doc_drive) === id) ?? null;
+      const found =
+        list.find((x) => String(x.row?.id_doc_drive) === id) ?? null;
 
       if (found && this.selectedInvoice() !== found) {
         this.selectedInvoice.set(found);
@@ -139,12 +161,12 @@ export class InvoiceManagerComponent implements OnInit {
         this.createIframe();
       }
 
-      const codeUnknown = 
-      (current?.row as any)?.error_code ??
-      (current?.row as any)?.code_error ??
-      null;
+      const codeUnknown =
+        (current?.row as any)?.error_code ??
+        (current?.row as any)?.code_error ??
+        null;
 
-      if (codeUnknown !==  null && codeUnknown !== undefined) {
+      if (codeUnknown !== null && codeUnknown !== undefined) {
         this.loadErrorCodes(String(codeUnknown));
       }
 
@@ -153,11 +175,11 @@ export class InvoiceManagerComponent implements OnInit {
       }
 
       if (current && this.lastPatchedId() !== String(current.id)) {
-        this.form.reset({}, { emitEvent: false});
+        this.form.reset({}, { emitEvent: false });
         this.patchRowOnlyFilled(current.row);
         this.lastPatchedId.set(String(current.id));
       }
-    })
+    });
   }
 
   wsService = inject(WebSocketService);
@@ -189,22 +211,23 @@ export class InvoiceManagerComponent implements OnInit {
             num_doc: numDoc,
             code_error: codeError,
             id_doc_drive: idDocDrive,
-            tipo: tipo
+            tipo: tipo,
           }));
-        } else if (payload && typeof payload === 'object'){
-          payload =  {
+        } else if (payload && typeof payload === 'object') {
+          payload = {
             ...(payload as any),
             url: pdfUrl,
             num_doc: numDoc,
             code_error: codeError,
             id_doc_drive: idDocDrive,
             tipo: tipo,
-            nombre_factura: nombreFactura
+            nombre_factura: nombreFactura,
           };
         }
-        const item = payload as InvoiceRow
+        const item = payload as InvoiceRow;
         const data = this.toUiItem(item, this.invoices().length + 1);
-        
+        console.log('[PAYLOAD]', payload);
+
         this.upsertInvoice(data);
 
         if (!payload) return;
@@ -221,11 +244,15 @@ export class InvoiceManagerComponent implements OnInit {
 
           const item = this.toUiItem(row, this.invoices().length + 1);
 
-          this.invoices.update(list => {
-            const ix = list.findIndex(x => String(x.id) === String(item.id));
+          this.invoices.update((list) => {
+            const ix = list.findIndex((x) => String(x.id) === String(item.id));
             if (ix >= 0) {
               const copy = [...list];
-              copy[ix] = { ...copy[ix], row: item.row, fileName: item.fileName };
+              copy[ix] = {
+                ...copy[ix],
+                row: item.row,
+                fileName: item.fileName,
+              };
               return copy;
             }
             return [item, ...list];
@@ -236,10 +263,10 @@ export class InvoiceManagerComponent implements OnInit {
             this.patchRowOnlyFilled(item.row);
           }
 
-          this.totalInvoices.set(numDoc); 
+          this.totalInvoices.set(numDoc);
         }
       },
-      error: err => console.error('WS error:', err),
+      error: (err) => console.error('WS error:', err),
     });
     this.loadTotalInvoices();
     this.getPendingInvoices();
@@ -299,14 +326,27 @@ export class InvoiceManagerComponent implements OnInit {
 
   private patchRowOnlyFilled(row: InvoiceRow) {
     const partial: any = {};
-    
+
     // Campos que deben ser numéricos
     const numericFields = [
-      'cod_empresa', 'base1', 'iva1', 'cuota1', 'recargo1',
-      'base2', 'iva2', 'cuota2', 'recargo2',
-      'base3', 'iva3', 'cuota3', 'recargo3',
-      'base_retencion', 'porcentaje_retencion', 'cuota_retencion',
-      'importe_total', 'num_apunte'
+      'cod_empresa',
+      'base1',
+      'iva1',
+      'cuota1',
+      'recargo1',
+      'base2',
+      'iva2',
+      'cuota2',
+      'recargo2',
+      'base3',
+      'iva3',
+      'cuota3',
+      'recargo3',
+      'base_retencion',
+      'porcentaje_retencion',
+      'cuota_retencion',
+      'importe_total',
+      'num_apunte',
     ];
 
     (Object.keys(this.form.controls) as (keyof InvoiceRow)[]).forEach((k) => {
@@ -330,23 +370,31 @@ export class InvoiceManagerComponent implements OnInit {
     this.form.patchValue(partial, { emitEvent: false });
   }
 
-  private toUiItem(row: InvoiceRow, fallbackIndex: number | string): UiInvoiceItem {
+  private toUiItem(
+    row: InvoiceRow,
+    fallbackIndex: number | string
+  ): UiInvoiceItem {
     const id = row.id_doc_drive;
 
     const fileName = row.nombre_factura ?? row.id_doc_drive;
     return {
-      id,                                        
+      id,
       fileName,
       createdAt: row.fecha ?? new Date().toLocaleString(),
       row: { ...row },
     };
   }
 
-  async fetchAllInvoices(apiUrl: string, opts: { userId?: string}): Promise<any[]> {
+  async fetchAllInvoices(
+    apiUrl: string,
+    opts: { userId?: string }
+  ): Promise<any[]> {
     const params = new URLSearchParams();
     if (opts.userId) params.set('user_id', opts.userId);
-    const url = `${apiUrl}/api/invoices${params.toString() ? `?${params.toString()}` : ''}`;
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const url = `${apiUrl}/api/invoices${
+      params.toString() ? `?${params.toString()}` : ''
+    }`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   }
@@ -354,10 +402,14 @@ export class InvoiceManagerComponent implements OnInit {
   async loadAll() {
     const userId = this.selectedUserId() ?? '0';
     try {
-      const rows = await this.fetchAllInvoices(this.apiUrl, {userId});
-      this.invoices.set(rows.map((row: any, idx: number) => this.toUiItem(row, row.id ?? idx + 1)));
-      if(this.selectedId()) {
-        this.createIframe()
+      const rows = await this.fetchAllInvoices(this.apiUrl, { userId });
+      this.invoices.set(
+        rows.map((row: any, idx: number) =>
+          this.toUiItem(row, row.id ?? idx + 1)
+        )
+      );
+      if (this.selectedId()) {
+        this.createIframe();
       }
     } catch (e) {
       console.error(e);
@@ -365,17 +417,19 @@ export class InvoiceManagerComponent implements OnInit {
   }
   open(inv: UiInvoiceItem) {
     const userId = this.selectedUserId() ?? '0';
-    this.router.navigate(['/', userId, 'facturas', inv.row.id_doc_drive]).then(() => {
-      if (inv.row.error_code) this.loadErrorCodes(inv.row.error_code);
-      console.log(inv.row);
-    });
+    this.router
+      .navigate(['/', userId, 'facturas', inv.row.id_doc_drive])
+      .then(() => {
+        if (inv.row.error_code) this.loadErrorCodes(inv.row.error_code);
+        console.log(inv.row);
+      });
     document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
     const userId = this.selectedUserId() ?? '0';
     document.body.style.overflow = '';
-    this.router.navigate(['/', userId ,'facturas']);
+    this.router.navigate(['/', userId, 'facturas']);
   }
 
   async saveDataAndSend() {
@@ -383,65 +437,68 @@ export class InvoiceManagerComponent implements OnInit {
     if (!inv) return;
     const updated = this.form.getRawValue() as InvoiceRow;
     const options = {
-          prefijo: updated.prefijo ?? null,
-          numero_factura: updated.numero_factura ?? null,
-          nombre_cliente: updated.nombre_cliente ?? null,
-          nombre_proveedor: updated.nombre_proveedor ?? null,
-          fecha: updated.fecha ?? null,
-          nif_emision: updated.nif_emision,
-          nif_receptor: updated.nif_receptor,
-          cif_lateral: updated.cif_lateral,
-          base1: updated.base1,
-          iva1: updated.iva1,
-          cuota1: updated.cuota1,
-          recargo1: updated.recargo1,
-          base2: updated.base2,
-          iva2: updated.iva2,
-          cuota2: updated.cuota2,
-          recargo2: updated.recargo2,
-          base3: updated.base3,
-          iva3: updated.iva3,
-          cuota3: updated.cuota3,
-          recargo3: updated.recargo3,
-          base_retencion: updated.base_retencion,
-          porcentaje_retencion: updated.porcentaje_retencion,
-          cuota_retencion: updated.cuota_retencion,
-          importe_total: updated.importe_total,
-          metodo_pago: updated.metodo_pago,
-          valid: updated.valid,
-          url: updated.url,
-          corregido: updated.corregido ?? 1,
-          // cuenta_contable: updated.cuenta_contable,
-          tipo: updated.tipo,
-          longitud: updated.longitud,
-          nombre_factura: updated.nombre_factura,
-          num_apunte: updated.num_apunte,
-          codigo_empresa: updated.cod_empresa,
-          id_doc_drive: inv.row.id_doc_drive
-    }
+      prefijo: updated.prefijo ?? null,
+      numero_factura: updated.numero_factura ?? null,
+      nombre_cliente: updated.nombre_cliente ?? null,
+      nombre_proveedor: updated.nombre_proveedor ?? null,
+      fecha: updated.fecha ?? null,
+      nif_emision: updated.nif_emision,
+      nif_receptor: updated.nif_receptor,
+      cif_lateral: updated.cif_lateral,
+      base1: updated.base1,
+      iva1: updated.iva1,
+      cuota1: updated.cuota1,
+      recargo1: updated.recargo1,
+      base2: updated.base2,
+      iva2: updated.iva2,
+      cuota2: updated.cuota2,
+      recargo2: updated.recargo2,
+      base3: updated.base3,
+      iva3: updated.iva3,
+      cuota3: updated.cuota3,
+      recargo3: updated.recargo3,
+      base_retencion: updated.base_retencion,
+      porcentaje_retencion: updated.porcentaje_retencion,
+      cuota_retencion: updated.cuota_retencion,
+      importe_total: updated.importe_total,
+      metodo_pago: updated.metodo_pago,
+      valid: updated.valid,
+      url: updated.url,
+      corregido: updated.corregido ?? 1,
+      cuenta_contable: updated.cuenta_contable,
+      tipo: updated.tipo,
+      longitud: updated.longitud,
+      nombre_factura: updated.nombre_factura,
+      num_apunte: updated.num_apunte,
+      codigo_empresa: updated.cod_empresa,
+      id_doc_drive: inv.row.id_doc_drive,
+    };
 
     try {
       await fetch(`${this.apiUrl}/api/invoices`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(options)
-      })
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(options),
+      });
       this.closeModal();
     } catch (err) {
-      console.error("Error al hacer el método PUT", err);
+      console.error('Error al hacer el método PUT', err);
     }
 
     this.sendData(options);
   }
 
   toggleShowAll(): void {
-    this.showAll.update(v => !v);
+    this.showAll.update((v) => !v);
   }
 
   async loadErrorCodes(errorCode = '') {
-    const codes = [errorCode];
+    const codes = errorCode.split(';').filter((code) => code.trim() !== '');
 
-    this.fields = this.resolver.resolve(codes)
+    this.fields = this.resolver.resolve(codes);
   }
 
   async loadTotalInvoices() {
@@ -449,10 +506,12 @@ export class InvoiceManagerComponent implements OnInit {
     const userId = this.selectedUserId() ?? 0;
 
     if (userId) params.set('user_id', userId);
-    const url = `${this.apiUrl}/api/pages${params.toString() ? `?${params.toString()}` : ''}`;
-    
-    try{
-      const res = await fetch(url, {headers: { 'Accept': 'application/json' }})
+    const url = `${this.apiUrl}/api/pages${
+      params.toString() ? `?${params.toString()}` : ''
+    }`;
+
+    try {
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const total = await res.json();
       this.totalInvoices.set(Number(total) || 0);
@@ -466,23 +525,23 @@ export class InvoiceManagerComponent implements OnInit {
     const inv = this.selectedInvoice();
     const total = Number(this.totalInvoices() ?? 0);
     const qs = new URLSearchParams({
-      timestamp: '',
+      timestamp: inv?.row.timestamp || '',
       file: options.nombre_factura,
       tipo: options.tipo,
       totalFiles: String(total),
       userId: userId,
-    })
+    });
 
     const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php?${qs.toString()}`;
-    
+
     try {
       const resp = await fetch(url, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          data: options
-        })
-      })
+          data: options,
+        }),
+      });
 
       if (!resp.ok) {
         throw new Error(`Error HTTP: ${resp.status}`);
@@ -491,7 +550,7 @@ export class InvoiceManagerComponent implements OnInit {
       const data = await resp.json();
       this.counters.setCorrect(data?.currentCount);
     } catch (err) {
-      console.error("Error", err);
+      console.error('Error', err);
       throw err;
     }
   }
@@ -514,8 +573,8 @@ export class InvoiceManagerComponent implements OnInit {
       fileName: normalizedFileName,
     };
 
-    this.invoices.update(list => {
-      const ix = list.findIndex(x => String(x.id) === String(normalized.id));
+    this.invoices.update((list) => {
+      const ix = list.findIndex((x) => String(x.id) === String(normalized.id));
       if (ix >= 0) {
         const copy = [...list];
         copy[ix] = { ...copy[ix], ...normalized, row: normalized.row };
@@ -526,32 +585,42 @@ export class InvoiceManagerComponent implements OnInit {
 
     const opened = this.selectedInvoice();
     if (opened && String(opened.id) === String(normalized.id)) {
-      this.selectedInvoice.set({ ...opened, ...normalized, row: normalized.row });
+      this.selectedInvoice.set({
+        ...opened,
+        ...normalized,
+        row: normalized.row,
+      });
       this.patchRowOnlyFilled?.(normalized.row);
     }
   }
 
-
   pdfUrl() {
     const raw = this.selectedInvoice()?.row?.url || '';
-    if (!raw) return '';                                   
+    if (!raw) return '';
 
     const m = raw.match(/drive\.google\.com\/file\/d\/([^/]+)/i);
     const base = m ? `https://drive.google.com/file/d/${m[1]}/preview` : raw;
 
-    const url = `${base}${base.includes('?') ? '&' : '?'}access_token=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`;
+    const url = `${base}${
+      base.includes('?') ? '&' : '?'
+    }access_token=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`;
     return url;
   }
 
   createIframe() {
-    const iframe = '<iframe src="'+ this.pdfUrl() +'" allow="clipboard-write" width="640" height="480"></iframe>';
-    this.iframe = this.sanitizer.bypassSecurityTrustHtml( iframe);
+    const iframe =
+      '<iframe src="' +
+      this.pdfUrl() +
+      '" allow="clipboard-write" width="640" height="480"></iframe>';
+    this.iframe = this.sanitizer.bypassSecurityTrustHtml(iframe);
   }
 
   async getPendingInvoices() {
     try {
       const userId = this.selectedUserId() ?? 0;
-      const res = await fetch(`${this.apiUrl}/api/count`, {headers: { 'Accept': 'application/json' } });
+      const res = await fetch(`${this.apiUrl}/api/count`, {
+        headers: { Accept: 'application/json' },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       for (const invoice of data) {
@@ -560,7 +629,7 @@ export class InvoiceManagerComponent implements OnInit {
         }
       }
     } catch (err) {
-      console.error("Error", err);
+      console.error('Error', err);
     }
   }
 
@@ -573,47 +642,48 @@ export class InvoiceManagerComponent implements OnInit {
     return Array.isArray(control);
   }
 
-  asControlArray(control: keyof InvoiceRow | (keyof InvoiceRow)[]): (keyof InvoiceRow)[] {
+  asControlArray(
+    control: keyof InvoiceRow | (keyof InvoiceRow)[]
+  ): (keyof InvoiceRow)[] {
     return Array.isArray(control) ? control : [control];
   }
 
   getControlLabel(controlName: keyof InvoiceRow): string {
     // Mapeo de nombres de controles a etiquetas legibles
     const labelMap: Record<string, string> = {
-      'numero_factura': 'Número de Factura',
-      'nombre_factura': 'Nombre de Factura',
-      'nombre_cliente': 'Nombre Cliente',
-      'nombre_proveedor': 'Nombre Proveedor',
-      'fecha': 'Fecha',
-      'cod_empresa': 'Código Empresa',
-      'nif_emision': 'NIF Emisor',
-      'nif_receptor': 'NIF Receptor',
-      'cif_lateral': 'CIF Lateral',
-      'base1': 'Base 1',
-      'iva1': 'IVA 1',
-      'cuota1': 'Cuota 1',
-      'recargo1': 'Recargo 1',
-      'base2': 'Base 2',
-      'iva2': 'IVA 2',
-      'cuota2': 'Cuota 2',
-      'recargo2': 'Recargo 2',
-      'base3': 'Base 3',
-      'iva3': 'IVA 3',
-      'cuota3': 'Cuota 3',
-      'recargo3': 'Recargo 3',
-      'base_retencion': 'Base Retención',
-      'porcentaje_retencion': '% Retención',
-      'cuota_retencion': 'Cuota Retención',
-      'importe_total': 'Importe Total',
-      'metodo_pago': 'Método de Pago',
-      'prefijo': 'Prefijo',
-      'cuenta_contable': 'Cuenta Contable',
-      'num_apunte': 'Número de Asiento',
-      'longitud': 'Longitud',
-      'tipo': 'Tipo'
+      numero_factura: 'Número de Factura',
+      nombre_factura: 'Nombre de Factura',
+      nombre_cliente: 'Nombre Cliente',
+      nombre_proveedor: 'Nombre Proveedor',
+      fecha: 'Fecha',
+      cod_empresa: 'Código Empresa',
+      nif_emision: 'NIF Emisor',
+      nif_receptor: 'NIF Receptor',
+      cif_lateral: 'CIF Lateral',
+      base1: 'Base 1',
+      iva1: 'IVA 1',
+      cuota1: 'Cuota 1',
+      recargo1: 'Recargo 1',
+      base2: 'Base 2',
+      iva2: 'IVA 2',
+      cuota2: 'Cuota 2',
+      recargo2: 'Recargo 2',
+      base3: 'Base 3',
+      iva3: 'IVA 3',
+      cuota3: 'Cuota 3',
+      recargo3: 'Recargo 3',
+      base_retencion: 'Base Retención',
+      porcentaje_retencion: '% Retención',
+      cuota_retencion: 'Cuota Retención',
+      importe_total: 'Importe Total',
+      metodo_pago: 'Método de Pago',
+      prefijo: 'Prefijo',
+      cuenta_contable: 'Cuenta Contable',
+      num_apunte: 'Número de Asiento',
+      longitud: 'Longitud',
+      tipo: 'Tipo',
     };
 
     return labelMap[controlName as string] || String(controlName);
   }
 }
-
