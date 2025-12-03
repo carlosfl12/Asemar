@@ -436,6 +436,7 @@ export class InvoiceManagerComponent implements OnInit {
     const inv = this.selectedInvoice();
     if (!inv) return;
     const updated = this.form.getRawValue() as InvoiceRow;
+    console.log('[COD EMPRESA]', inv.row.codigo_empresa);
     const options = {
       prefijo: updated.prefijo ?? null,
       numero_factura: updated.numero_factura ?? null,
@@ -473,6 +474,7 @@ export class InvoiceManagerComponent implements OnInit {
       id_doc_drive: inv.row.id_doc_drive,
       timestamp: inv.row.timestamp,
       userId: this.route.snapshot.paramMap.get('userId') ?? '',
+      codEmpresa: inv.row.codigo_empresa,
     };
 
     try {

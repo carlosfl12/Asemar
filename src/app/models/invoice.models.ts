@@ -32,7 +32,7 @@ export interface InvoiceRow {
   corregido: number | null;
   longitud: string | null;
   tipo: string | null;
-  cod_empresa: string | null;
+  codigo_empresa: string | null;
   error_code: string;
   id_doc_drive: string;
   timestamp: string | null;
