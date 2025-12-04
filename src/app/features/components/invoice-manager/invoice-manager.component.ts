@@ -14,7 +14,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { InvoiceRow } from '../../../models/invoice.models';
 import { WebSocketService } from '../web-socket-service/web-socket-service.component';
-import { Subscription } from 'rxjs';
+import { Subscription, timestamp } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { PdfViewerModule } from 'ng2-pdf-viewer';
@@ -58,6 +58,7 @@ export class InvoiceManagerComponent implements OnInit {
     initialValue: this.route.snapshot.paramMap,
   });
   private lastPatchedId = signal<string | null>(null);
+  private errorCodes: string[] = [];
 
   lastNumDoc = signal<number | null>(null);
   pdfUrl1!: SafeResourceUrl;
@@ -200,7 +201,7 @@ export class InvoiceManagerComponent implements OnInit {
         const idDocDrive = evt?.id_doc_drive ?? '';
         const tipo = evt?.tipo ?? '';
         const nombreFactura = evt?.nombre_factura ?? '';
-        const timestamp = evt?.timestamp ?? '';
+        const timestamp = evt?.timestamp ?? evt?.data.timestamp ?? '';
         this.lastNumDoc.set(numDoc);
         this.errorCode.set(codeError);
 
@@ -212,6 +213,7 @@ export class InvoiceManagerComponent implements OnInit {
             code_error: codeError,
             id_doc_drive: idDocDrive,
             tipo: tipo,
+            timestamp: timestamp,
           }));
         } else if (payload && typeof payload === 'object') {
           payload = {
@@ -225,13 +227,9 @@ export class InvoiceManagerComponent implements OnInit {
             timestamp: timestamp,
           };
         }
-        const item = payload as InvoiceRow;
-        const data = this.toUiItem(item, this.invoices().length + 1);
-        console.log('[PAYLOAD]', payload);
-
-        this.upsertInvoice(data);
-
         if (!payload) return;
+
+        console.log('[PAYLOAD]', payload);
 
         if (Array.isArray(payload)) {
           const mapped = payload.map((row: any, i: number) => {
@@ -244,25 +242,7 @@ export class InvoiceManagerComponent implements OnInit {
           if (!row.url && pdfUrl) row.url = pdfUrl;
 
           const item = this.toUiItem(row, this.invoices().length + 1);
-
-          this.invoices.update((list) => {
-            const ix = list.findIndex((x) => String(x.id) === String(item.id));
-            if (ix >= 0) {
-              const copy = [...list];
-              copy[ix] = {
-                ...copy[ix],
-                row: item.row,
-                fileName: item.fileName,
-              };
-              return copy;
-            }
-            return [item, ...list];
-          });
-
-          const opened = this.selectedInvoice();
-          if (opened && String(opened.id) === String(item.id)) {
-            this.patchRowOnlyFilled(item.row);
-          }
+          this.upsertInvoice(item);
 
           this.totalInvoices.set(numDoc);
         }
@@ -276,6 +256,40 @@ export class InvoiceManagerComponent implements OnInit {
   private isFilled(v: unknown) {
     if (typeof v === 'number') return true;
     return v !== null && v !== undefined && String(v).trim() !== '';
+  }
+
+  private isValidDate(fecha: string | null | undefined): boolean {
+    if (!fecha || String(fecha).trim() === '') return false;
+
+    const txt = String(fecha);
+
+    // Formato DD/MM/YYYY
+    const dmy = txt.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dmy) {
+      const [, d, m, y] = dmy;
+      const date = new Date(Number(y), Number(m) - 1, Number(d));
+      return (
+        date.getFullYear() === Number(y) &&
+        date.getMonth() === Number(m) - 1 &&
+        date.getDate() === Number(d)
+      );
+    }
+
+    // Formato YYYY-MM-DD (ISO)
+    const iso = txt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      const [, y, m, d] = iso;
+      const date = new Date(Number(y), Number(m) - 1, Number(d));
+      return (
+        date.getFullYear() === Number(y) &&
+        date.getMonth() === Number(m) - 1 &&
+        date.getDate() === Number(d)
+      );
+    }
+
+    // Intentar parsear cualquier otro formato
+    const ms = Date.parse(txt);
+    return !isNaN(ms);
   }
 
   private toInputDate(fecha: string | null): string | null {
@@ -436,7 +450,6 @@ export class InvoiceManagerComponent implements OnInit {
     const inv = this.selectedInvoice();
     if (!inv) return;
     const updated = this.form.getRawValue() as InvoiceRow;
-    console.log('[COD EMPRESA]', inv.row.codigo_empresa);
     const options = {
       prefijo: updated.prefijo ?? null,
       numero_factura: updated.numero_factura ?? null,
@@ -477,6 +490,18 @@ export class InvoiceManagerComponent implements OnInit {
       codEmpresa: inv.row.codigo_empresa,
     };
 
+    this.validateErrors(options);
+
+    if (this.errorCodes.length === 0) {
+      console.log('Se puede enviar');
+    } else {
+      console.warn('Hay códigos con error');
+      const errors = this.errorCodes.join(';');
+      console.log('ERRORES;', errors);
+      this.loadErrorCodes(errors);
+      return;
+    }
+
     try {
       await fetch(`${this.apiUrl}/api/invoices`, {
         method: 'PUT',
@@ -494,6 +519,64 @@ export class InvoiceManagerComponent implements OnInit {
     this.sendData(options);
   }
 
+  compareResult(
+    bases: number[],
+    ivas: number[],
+    recargos: number[],
+    total: number | null
+  ): boolean {
+    let baseTotal = 0;
+    let ivaTotal = 0;
+    let recargoTotal = 0;
+    bases.map((result) => {
+      baseTotal += Number(result);
+      console.log(baseTotal);
+    });
+    ivas.map((result) => {
+      ivaTotal += Number(result);
+      console.log(ivaTotal);
+    });
+    recargos.map((result) => {
+      recargoTotal += result;
+      console.log(result);
+    });
+    const t = total ?? 0;
+    return t === baseTotal + ivaTotal - recargoTotal;
+  }
+
+  validateErrors(options: any) {
+    if (
+      !this.compareResult(
+        [options.base1 ?? 0, options.base2 ?? 0, options.base3 ?? 0],
+        [options.cuota1 ?? 0, options.cuota2 ?? 0, options.cuota3 ?? 0],
+        [options.recargo1 ?? 0, options.recargo2 ?? 0, options.recargo3 ?? 0],
+        options.importe_total ?? 0
+      )
+    ) {
+      this.errorCodes.push('305');
+    }
+    if (!this.isValidDate(options.fecha)) {
+      this.errorCodes.push('307');
+    }
+    if (
+      !options.nif_emision ||
+      options.nif_emision == '' ||
+      options.nif_emision == null
+    ) {
+      this.errorCodes.push('308');
+    }
+    if (
+      !options.nif_receptor ||
+      options.nif_receptor == '' ||
+      options.nif_receptor == null
+    ) {
+      this.errorCodes.push('309');
+    }
+    if (options.nif_emision == options.nif_receptor) {
+      this.errorCodes.push('310');
+    }
+  }
+
   toggleShowAll(): void {
     this.showAll.update((v) => !v);
   }
@@ -502,6 +585,7 @@ export class InvoiceManagerComponent implements OnInit {
     const codes = errorCode.split(';').filter((code) => code.trim() !== '');
 
     this.fields = this.resolver.resolve(codes);
+    this.errorCodes = [];
   }
 
   async loadTotalInvoices() {
@@ -535,6 +619,15 @@ export class InvoiceManagerComponent implements OnInit {
       userId: userId,
     });
 
+    const dataToSend = {
+      ...options,
+      timestamp: inv?.row.timestamp || '',
+      userId: userId,
+      file: options.nombre_factura,
+      tipo: options.tipo,
+      totalFiles: String(total),
+    };
+
     const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php?${qs.toString()}`;
 
     try {
@@ -542,7 +635,7 @@ export class InvoiceManagerComponent implements OnInit {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          data: options,
+          data: dataToSend,
         }),
       });
 
@@ -687,5 +780,105 @@ export class InvoiceManagerComponent implements OnInit {
     };
 
     return labelMap[controlName as string] || String(controlName);
+  }
+
+  async discardInvoice() {
+    console.log('Descartando la factura:', this.selectedInvoice()?.fileName);
+    const invoiceRow = this.selectedInvoice()?.row;
+    const options = {
+      id_doc_drive: invoiceRow?.id_doc_drive,
+      timestamp: invoiceRow?.timestamp,
+    };
+    try {
+      await fetch(`${this.apiUrl}/api/discard`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(options),
+      });
+      this.sendDiscardedInvoice();
+      this.closeModal();
+    } catch (err) {
+      console.error('Error al hacer el método PUT', err);
+    }
+  }
+  async sendDiscardedInvoice() {
+    const inv = this.selectedInvoice();
+    if (!inv) return;
+    const updated = this.form.getRawValue() as InvoiceRow;
+    const options = {
+      prefijo: updated.prefijo ?? null,
+      numero_factura: updated.numero_factura ?? null,
+      nombre_cliente: updated.nombre_cliente ?? null,
+      nombre_proveedor: updated.nombre_proveedor ?? null,
+      fecha: updated.fecha ?? null,
+      nif_emision: updated.nif_emision,
+      nif_receptor: updated.nif_receptor,
+      cif_lateral: updated.cif_lateral,
+      base1: updated.base1,
+      iva1: updated.iva1,
+      cuota1: updated.cuota1,
+      recargo1: updated.recargo1,
+      base2: updated.base2,
+      iva2: updated.iva2,
+      cuota2: updated.cuota2,
+      recargo2: updated.recargo2,
+      base3: updated.base3,
+      iva3: updated.iva3,
+      cuota3: updated.cuota3,
+      recargo3: updated.recargo3,
+      base_retencion: updated.base_retencion,
+      porcentaje_retencion: updated.porcentaje_retencion,
+      cuota_retencion: updated.cuota_retencion,
+      importe_total: updated.importe_total,
+      metodo_pago: updated.metodo_pago,
+      valid: updated.valid,
+      url: updated.url,
+      corregido: '-1',
+      cuenta_contable: updated.cuenta_contable,
+      tipo: updated.tipo,
+      longitud: updated.longitud,
+      nombre_factura: updated.nombre_factura,
+      num_apunte: updated.num_apunte,
+      id_doc_drive: inv.row.id_doc_drive,
+      timestamp: inv.row.timestamp,
+      userId: this.route.snapshot.paramMap.get('userId') ?? '',
+      codEmpresa: inv.row.codigo_empresa,
+    };
+    const userId = this.route.snapshot.paramMap.get('userId') ?? '';
+    const total = Number(this.totalInvoices() ?? 0);
+
+    const dataToSend = {
+      ...options,
+      timestamp: inv?.row.timestamp || '',
+      userId: userId,
+      file: options.nombre_factura,
+      tipo: options.tipo,
+      totalFiles: String(total),
+    };
+
+    const url = `https://demo99.esphera.ai/ws/n8n/getCuentaContable.php`;
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: dataToSend,
+        }),
+      });
+
+      if (!resp.ok) {
+        throw new Error(`Error HTTP: ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      this.counters.setCorrect(data?.currentCount);
+    } catch (err) {
+      console.error('Error', err);
+      throw err;
+    }
   }
 }

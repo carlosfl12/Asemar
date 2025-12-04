@@ -73,6 +73,7 @@
       >
         {{ showAll() ? "Mostrar fallidos" : "Mostrar todos" }}
       </button>
+      <button class="toggle-btn" (click)="discardInvoice()">Descartar</button>
     </div>
   </div>
 
@@ -95,6 +96,7 @@
                 >
                   {{ getControlLabel(ctrl) }}
                   <input
+                    class="campo-fallido"
                     [id]="'fld-' + f.key + '-' + i"
                     [type]="f.type"
                     [step]="f.step || null"
@@ -109,6 +111,7 @@
               <label [attr.for]="'fld-' + f.key"
                 >{{ f.label }}
                 <input
+                  class="campo-fallido"
                   [id]="'fld-' + f.key"
                   [type]="f.type"
                   [step]="f.step || null"
